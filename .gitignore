@@ -1,0 +1,25 @@
+# Gradle
+.gradle
+build/
+
+# IDEs
+.idea/
+*.iml
+.settings/
+.classpath
+.project
+bin/
+out/
+
+# macOS
+.DS_Store
+
+# Spring Boot
+HELP.md
+
+# Log files
+*.log
+
+# Environment variables
+.env
+.env.local

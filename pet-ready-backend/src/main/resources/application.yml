@@ -1,0 +1,66 @@
+# Spring Boot 기본 설정
+spring:
+  application:
+    name: pet-ready-backend
+  
+  # 데이터베이스 설정 (MySQL 8.0 기준)
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    # 기본은 로컬 환경을 바라보도록 설정
+    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/pet_ready?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true}
+    username: ${MYSQL_USER:root}
+    password: ${MYSQL_PASSWORD:password}
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update # 개발 환경에서는 update, 운영 단계에서는 validate 권장
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MySQLDialect
+
+# Swagger 설정
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    groups-order: DESC
+    operations-sorter: alpha
+    disable-swagger-default-url: true
+    display-request-duration: true
+  api-docs:
+    path: /v3/api-docs
+  show-actuator: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.petready.backend: DEBUG
+    org.hibernate.SQL: DEBUG # SQL 쿼리 로그 출력
+
+---
+# 개발 환경 (Local) 프로필
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    url: jdbc:mysql://localhost:3306/pet_ready_dev?serverTimezone=Asia/Seoul
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 로컬 개발 시에는 재시작할 때마다 스키마 초기화
+
+---
+# 운영 환경 (Jetson Nano) 프로필
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
