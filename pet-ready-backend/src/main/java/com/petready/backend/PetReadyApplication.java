@@ -3,12 +3,14 @@ package com.petready.backend;
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.data.jpa.repository.config.EnableJpaAuditing;
+import org.springframework.scheduling.annotation.EnableScheduling;
 
 /**
  * 펫-레디(Pet-Ready) 백엔드 애플리케이션의 메인 진입 클래스입니다.
  * Spring Boot 애플리케이션을 초기화하고 실행하는 역할을 합니다.
  */
 @EnableJpaAuditing
+@EnableScheduling
 @SpringBootApplication
 public class PetReadyApplication {
 

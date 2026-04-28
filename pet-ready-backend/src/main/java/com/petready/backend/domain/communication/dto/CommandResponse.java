@@ -25,4 +25,7 @@ public class CommandResponse {
 
     @Schema(description = "명령 지속 시간 (초)", example = "10")
     private Integer durationSec;
+
+    @Schema(description = "기기가 다음 명령을 확인하기까지 대기할 시간(초). 이벤트 발생 시 폴링 주기를 단축하기 위함.", example = "5")
+    private Integer nextPollIntervalSec;
 }

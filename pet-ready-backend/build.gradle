@@ -32,6 +32,7 @@ dependencies {
 
     // Database
     runtimeOnly 'com.mysql:mysql-connector-j'
+    runtimeOnly 'com.h2database:h2' // 로컬 테스트를 위한 초경량 인메모리 DB
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'
@@ -44,6 +45,9 @@ dependencies {
     implementation 'io.jsonwebtoken:jjwt-api:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-impl:0.12.6'
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
+
+    // Firebase (FCM)
+    implementation 'com.google.firebase:firebase-admin:9.2.0'
 
     // Test
     testImplementation 'org.springframework.boot:spring-boot-starter-test'

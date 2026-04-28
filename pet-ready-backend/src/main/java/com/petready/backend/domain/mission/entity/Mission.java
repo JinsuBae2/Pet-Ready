@@ -60,4 +60,15 @@ public class Mission extends BaseEntity {
     @Builder.Default
     @Column(name = "is_completed", nullable = false)
     private Boolean isCompleted = false;
+
+    /**
+     * 미션을 완료 처리하고 응답 시간을 기록합니다.
+     * @param respondedAt 응답한 시각
+     * @param responseTimeSec 발급부터 응답까지 걸린 시간(초)
+     */
+    public void complete(LocalDateTime respondedAt, Long responseTimeSec) {
+        this.respondedAt = respondedAt;
+        this.responseTimeSec = responseTimeSec;
+        this.isCompleted = true;
+    }
 }

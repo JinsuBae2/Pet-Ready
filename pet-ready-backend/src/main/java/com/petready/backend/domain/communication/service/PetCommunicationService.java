@@ -9,6 +9,8 @@ import com.petready.backend.domain.device.entity.Device;
 import com.petready.backend.domain.device.repository.DeviceRepository;
 import com.petready.backend.domain.log.entity.PetStatusLog;
 import com.petready.backend.domain.log.repository.PetStatusLogRepository;
+import com.petready.backend.domain.notification.service.FcmNotificationService;
+import com.petready.backend.global.enums.NotificationType;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -30,6 +32,7 @@ public class PetCommunicationService {
     private final DeviceRepository deviceRepository;
     private final PetStatusLogRepository logRepository;
     private final CommandRepository commandRepository;
+    private final FcmNotificationService fcmNotificationService;
 
     /**
      * 기기로부 상태 로그를 수신하여 저장하고, 기기의 실시간 상태를 업데이트합니다.
@@ -61,8 +64,8 @@ public class PetCommunicationService {
         // (참고: 현 엔티티 설계상 Setter가 없으므로 Reflection이나 별도 메서드 필요)
         updateDeviceHeartbeat(device);
 
-        // 4. 상태 분석 로직
-        return analyzePetStatus(request);
+        // 4. 상태 분석 로직 (배터리 알림 등 포함)
+        return analyzePetStatus(request, device);
     }
 
     /**
@@ -83,8 +86,12 @@ public class PetCommunicationService {
                         .commandId(command.getId())
                         .command(command.getCommand())
                         .durationSec(command.getDurationSec())
+                        .nextPollIntervalSec(5) // 명령 수행/인지 중에는 5초 주기로 단축
                         .build())
-                .orElse(CommandResponse.builder().hasCommand(false).build());
+                .orElse(CommandResponse.builder()
+                        .hasCommand(false)
+                        .nextPollIntervalSec(30) // 기본 폴링 주기를 30초로 설정
+                        .build());
     }
 
     /**
@@ -116,7 +123,7 @@ public class PetCommunicationService {
     /**
      * 배터리, 터치, 압력 센서 데이터를 기반으로 반려견의 상태를 분석하는 기초 로직입니다.
      */
-    private PetStatusResponse analyzePetStatus(PetStatusRequest request) {
+    private PetStatusResponse analyzePetStatus(PetStatusRequest request, Device device) {
         boolean isHungry = request.getBatteryLevel() != null && request.getBatteryLevel() <= 20;
         String mood = "NORMAL";
         String healthStatus = "GOOD";
@@ -133,6 +140,17 @@ public class PetCommunicationService {
 
         if (isHungry) {
             message = "배터리가 부족하여 반려견의 배고픔 수치가 올라갔습니다.";
+            
+            // 배터리 20% 이하일 경우 FCM 밥주기 알림 발송 (BK-03)
+            if (device.getUser() != null && device.getUser().getFcmToken() != null) {
+                String petName = device.getPetName() != null ? device.getPetName() : "반려견";
+                fcmNotificationService.sendNotification(
+                        device.getUser().getFcmToken(),
+                        "펫-레디 알림",
+                        petName + " 배가 고파요!",
+                        NotificationType.FEEDING
+                );
+            }
         }
 
         return PetStatusResponse.builder()

@@ -23,3 +23,7 @@ HELP.md
 # Environment variables
 .env
 .env.local
+
+# Firebase Credentials
+pet-ready-serviceAccountKey.json
+*serviceAccountKey.json
