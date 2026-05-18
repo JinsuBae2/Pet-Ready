@@ -6,17 +6,10 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 
-/**
- * Walk 엔티티에 대한 데이터베이스 접근을 담당하는 리포지토리입니다.
- */
 @Repository
 public interface WalkRepository extends JpaRepository<Walk, Long> {
-    
     /**
-     * 특정 기기의 최근 산책 기록 목록을 조회합니다.
-     * 
-     * @param deviceId 기기 ID
-     * @return 산책 기록 목록
+     * 특정 사용자의 모든 산책 기록을 조회합니다.
      */
-    List<Walk> findAllByDeviceDeviceIdOrderByStartedAtDesc(String deviceId);
+    List<Walk> findAllByUserEmail(String email);
 }
