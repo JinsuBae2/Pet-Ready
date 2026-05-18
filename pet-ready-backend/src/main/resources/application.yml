@@ -1,17 +1,17 @@
 # Spring Boot 기본 설정
 spring:
   profiles:
-    active: local
+    active: dev
   application:
     name: pet-ready-backend
   
-  # 데이터베이스 설정 (MySQL 8.0 기준)
+  # 데이터베이스 설정 (MariaDB 기준)
   datasource:
-    driver-class-name: com.mysql.cj.jdbc.Driver
+    driver-class-name: org.mariadb.jdbc.Driver
     # 기본은 로컬 환경을 바라보도록 설정
-    url: ${MYSQL_URL:jdbc:mysql://localhost:3306/pet_ready?serverTimezone=Asia/Seoul&useSSL=false&allowPublicKeyRetrieval=true}
-    username: ${MYSQL_USER:root}
-    password: ${MYSQL_PASSWORD:password}
+    url: ${MARIADB_URL:jdbc:mariadb://localhost:3306/pet_ready?serverTimezone=Asia/Seoul}
+    username: ${MARIADB_USER:root}
+    password: ${MARIADB_PASSWORD:2019}
 
   # JPA 설정
   jpa:
@@ -21,7 +21,7 @@ spring:
     properties:
       hibernate:
         format_sql: true
-        dialect: org.hibernate.dialect.MySQLDialect
+        dialect: org.hibernate.dialect.MariaDBDialect
 
 # Swagger 설정
 springdoc:
