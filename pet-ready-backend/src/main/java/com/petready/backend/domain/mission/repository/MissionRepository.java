@@ -19,4 +19,12 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
      * @return 미완료 미션 목록
      */
     List<Mission> findAllByDeviceDeviceIdAndIsCompletedFalse(String deviceId);
+    /**
+     * 특정 사용자의 모든 미션 목록을 조회합니다.
+     * (누적 평균 점수 산출을 위해 사용됩니다.)
+     * 
+     * @param email 사용자 이메일
+     * @return 전체 미션 목록
+     */
+    List<Mission> findAllByDeviceUserEmail(String email);
 }
