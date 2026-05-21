@@ -51,7 +51,20 @@ public class Walk extends BaseEntity {
     private Long durationSec;
 
     /**
+     * 실제 산책 시작 시각
+     */
+    @Column(name = "started_at", nullable = false)
+    private java.time.LocalDateTime startedAt;
+
+    /**
+     * 실제 산책 종료 시각
+     */
+    @Column(name = "ended_at", nullable = false)
+    private java.time.LocalDateTime endedAt;
+
+    /**
      * 산책 경로 데이터 (JSON 형식의 문자열)
+     * DTO에서는 객체 리스트로 받지만, DB에는 직렬화된 문자열로 저장합니다.
      */
     @Lob
     @Column(name = "route_json", columnDefinition = "TEXT")
