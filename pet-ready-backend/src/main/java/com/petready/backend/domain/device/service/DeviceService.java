@@ -3,6 +3,8 @@ package com.petready.backend.domain.device.service;
 import com.petready.backend.domain.device.dto.DeviceRegisterRequest;
 import com.petready.backend.domain.device.entity.Device;
 import com.petready.backend.domain.device.repository.DeviceRepository;
+import com.petready.backend.domain.score.entity.RealTimeScore;
+import com.petready.backend.domain.score.repository.RealTimeScoreRepository;
 import com.petready.backend.domain.user.entity.User;
 import com.petready.backend.domain.user.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -19,9 +21,10 @@ public class DeviceService {
 
     private final DeviceRepository deviceRepository;
     private final UserRepository userRepository;
+    private final RealTimeScoreRepository scoreRepository;
 
     /**
-     * 사용자와 기기를 연결(등록)합니다.
+     * 사용자와 기기를 연결(등록)하고 초기 점수를 세팅합니다.
      * 
      * @param request 등록 요청 데이터
      * @param email 유저 이메일 (인증 정보)
@@ -51,5 +54,12 @@ public class DeviceService {
                 .build();
 
         deviceRepository.save(device);
+
+        // BK-02 기기 등록 완료 시 해당 기기의 실시간 현재 점수를 100점으로 최초 초기화
+        RealTimeScore initialScore = RealTimeScore.builder()
+                .device(device)
+                .currentScore(100)
+                .build();
+        scoreRepository.save(initialScore);
     }
 }

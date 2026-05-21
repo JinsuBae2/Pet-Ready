@@ -76,4 +76,25 @@ public class Device extends BaseEntity {
      */
     @Column(name = "last_heartbeat")
     private LocalDateTime lastHeartbeat;
+
+    /**
+     * 방전 패널티로 인한 굶김 횟수 (N_sick)
+     */
+    @Builder.Default
+    @Column(name = "sick_count", nullable = false)
+    private Integer sickCount = 0;
+
+    /**
+     * 마지막으로 방전 패널티를 받은 시각 (중복 패널티 방지용)
+     */
+    @Column(name = "last_discharge_penalty_at")
+    private LocalDateTime lastDischargePenaltyAt;
+
+    /**
+     * 굶김 횟수를 1 증가시킵니다.
+     */
+    public void incrementSickCount() {
+        this.sickCount += 1;
+        this.lastDischargePenaltyAt = LocalDateTime.now();
+    }
 }

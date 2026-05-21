@@ -22,4 +22,12 @@ public interface PetStatusLogRepository extends JpaRepository<PetStatusLog, Long
      * @return 로그 목록
      */
     List<PetStatusLog> findAllByDeviceDeviceIdAndRecordedAtBetween(String deviceId, LocalDateTime start, LocalDateTime end);
+
+    /**
+     * 특정 기기의 가장 최근 로그 1건을 조회합니다.
+     * 
+     * @param deviceId 기기 ID
+     * @return 가장 최근 로그 (Optional)
+     */
+    java.util.Optional<PetStatusLog> findFirstByDeviceDeviceIdOrderByRecordedAtDesc(String deviceId);
 }
