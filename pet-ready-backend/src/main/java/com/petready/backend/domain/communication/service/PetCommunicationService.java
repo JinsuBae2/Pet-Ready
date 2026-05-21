@@ -33,6 +33,8 @@ public class PetCommunicationService {
     private final PetStatusLogRepository logRepository;
     private final CommandRepository commandRepository;
     private final FcmNotificationService fcmNotificationService;
+    private final com.petready.backend.domain.score.service.ScoreService scoreService;
+    private final com.petready.backend.domain.mission.repository.MissionRepository missionRepository;
 
     /**
      * 기기로부 상태 로그를 수신하여 저장하고, 기기의 실시간 상태를 업데이트합니다.
@@ -121,7 +123,7 @@ public class PetCommunicationService {
     }
 
     /**
-     * 배터리, 터치, 압력 센서 데이터를 기반으로 반려견의 상태를 분석하는 기초 로직입니다.
+     * 배터리, 터치, 압력 센서 데이터를 기반으로 반려견의 상태를 분석하는 로직입니다.
      */
     private PetStatusResponse analyzePetStatus(PetStatusRequest request, Device device) {
         boolean isHungry = request.getBatteryLevel() != null && request.getBatteryLevel() <= 20;
@@ -129,27 +131,94 @@ public class PetCommunicationService {
         String healthStatus = "GOOD";
         String message = "반려견이 안정적인 상태입니다.";
 
+        // BK-05: 짖음 달래기 정산 (터치 센서 연동)
         if (Boolean.TRUE.equals(request.getTouchActive())) {
             mood = "HAPPY";
             message = "반려견이 주인의 터치를 느껴 기분이 좋습니다!";
+            
+            // 활성화된 BARKING 미션이 있는지 확인하고 점수 정산
+            java.util.Optional<com.petready.backend.domain.mission.entity.Mission> activeBarkingOpt = 
+                    missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
+                            device.getDeviceId(), NotificationType.BARKING.name());
+            
+            if (activeBarkingOpt.isPresent()) {
+                com.petready.backend.domain.mission.entity.Mission mission = activeBarkingOpt.get();
+                long responseTimeSec = java.time.Duration.between(mission.getIssuedAt(), LocalDateTime.now()).getSeconds();
+                
+                int delta = 0;
+                if (responseTimeSec <= 300) {
+                    delta = 5;
+                } else if (responseTimeSec <= 900) {
+                    delta = 2;
+                } else if (responseTimeSec <= 1800) {
+                    delta = -3;
+                } else {
+                    delta = -10; // 30분 초과 시점엔 스케줄러가 잡기 전일 수도 있으므로 여기서도 예외 처리
+                }
+                
+                mission.complete(LocalDateTime.now(), responseTimeSec);
+                missionRepository.save(mission);
+                
+                scoreService.processScoreEvent(device.getDeviceId(), "BARK_RESPOND", delta, "짖음 미션 응답 완료 (" + responseTimeSec + "초)");
+                log.info("기기 [{}] 짖음 미션 수동 완료: 응답 시간 {}초, 점수 변화 {}", device.getDeviceId(), responseTimeSec, delta);
+            }
         } else if (request.getPressureValue() != null && request.getPressureValue() > 50.0) {
             mood = "STRESSED";
             healthStatus = "WARNING";
             message = "강한 압력이 감지되었습니다. 반려견의 상태를 확인해주세요.";
         }
 
+        // BK-03: 배고픔 및 밥 주기 미션 처리
         if (isHungry) {
             message = "배터리가 부족하여 반려견의 배고픔 수치가 올라갔습니다.";
             
-            // 배터리 20% 이하일 경우 FCM 밥주기 알림 발송 (BK-03)
-            if (device.getUser() != null && device.getUser().getFcmToken() != null) {
-                String petName = device.getPetName() != null ? device.getPetName() : "반려견";
-                fcmNotificationService.sendNotification(
-                        device.getUser().getFcmToken(),
-                        "펫-레디 알림",
-                        petName + " 배가 고파요!",
-                        NotificationType.FEEDING
-                );
+            // 활성화된 FEEDING 미션이 없다면 새로 생성하고 알림 발송
+            java.util.Optional<com.petready.backend.domain.mission.entity.Mission> activeFeedingOpt = 
+                    missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
+                            device.getDeviceId(), NotificationType.FEEDING.name());
+            
+            if (activeFeedingOpt.isEmpty()) {
+                com.petready.backend.domain.mission.entity.Mission feedingMission = com.petready.backend.domain.mission.entity.Mission.builder()
+                        .device(device)
+                        .type(NotificationType.FEEDING.name())
+                        .issuedAt(LocalDateTime.now())
+                        .isCompleted(false)
+                        .build();
+                missionRepository.save(feedingMission);
+
+                if (device.getUser() != null && device.getUser().getFcmToken() != null) {
+                    String petName = device.getPetName() != null ? device.getPetName() : "반려견";
+                    fcmNotificationService.sendNotification(
+                            device.getUser().getFcmToken(),
+                            "펫-레디 알림",
+                            petName + " 배가 고파요!",
+                            NotificationType.FEEDING
+                    );
+                }
+            }
+        }
+
+        // 충전 패드에 올려 충전 시작 시 (밥 주기 완료 인식)
+        if (Boolean.TRUE.equals(request.getIsCharging())) {
+            java.util.Optional<com.petready.backend.domain.mission.entity.Mission> activeFeedingOpt = 
+                    missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
+                            device.getDeviceId(), NotificationType.FEEDING.name());
+            
+            if (activeFeedingOpt.isPresent()) {
+                com.petready.backend.domain.mission.entity.Mission mission = activeFeedingOpt.get();
+                long responseTimeSec = java.time.Duration.between(mission.getIssuedAt(), LocalDateTime.now()).getSeconds();
+                
+                // 30분(1800초) 이내에 밥을 주면 +3점 가점
+                if (responseTimeSec <= 1800) {
+                    scoreService.processScoreEvent(device.getDeviceId(), "FEEDING_COMPLETE", 3, "30분 이내 밥주기 미션 성공");
+                    log.info("기기 [{}] 밥주기 미션 성공 (+3점)", device.getDeviceId());
+                } else {
+                    // 30분이 넘었다면 점수는 주지 않고 미션만 종료 처리 (방전 전까지 밥을 주긴 함)
+                    log.info("기기 [{}] 밥주기 미션 완료 (30분 초과로 점수 없음)", device.getDeviceId());
+                }
+                
+                mission.complete(LocalDateTime.now(), responseTimeSec);
+                missionRepository.save(mission);
             }
         }
 

@@ -19,6 +19,24 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
      * @return 미완료 미션 목록
      */
     List<Mission> findAllByDeviceDeviceIdAndIsCompletedFalse(String deviceId);
+
+    /**
+     * 특정 기기의 지정된 타입 중 완료되지 않은 가장 최근 미션을 조회합니다.
+     *
+     * @param deviceId 기기 ID
+     * @param type 미션 타입
+     * @return 미완료 미션 (Optional)
+     */
+    java.util.Optional<Mission> findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(String deviceId, String type);
+
+    /**
+     * 특정 타입의 미션 중 지정된 시간 이전에 발급되었으나 아직 완료되지 않은 미션을 조회합니다.
+     *
+     * @param type 미션 타입
+     * @param time 지정 시간
+     * @return 만료된 미션 목록
+     */
+    List<Mission> findAllByTypeAndIsCompletedFalseAndIssuedAtBefore(String type, java.time.LocalDateTime time);
     /**
      * 특정 사용자의 모든 미션 목록을 조회합니다.
      * (누적 평균 점수 산출을 위해 사용됩니다.)

@@ -32,6 +32,7 @@ public class MissionSchedulerService {
     private final MissionRepository missionRepository;
     private final CommandRepository commandRepository;
     private final FcmNotificationService fcmNotificationService;
+    private final com.petready.backend.domain.score.service.ScoreService scoreService;
     private final TaskScheduler taskScheduler;
 
     /**
@@ -100,6 +101,37 @@ public class MissionSchedulerService {
                     petName + "가 짖고 있어요! 얼른 달래줘야 해요",
                     NotificationType.BARKING
             );
+        }
+    }
+
+    /**
+     * 1분 주기로 실행되어 30분 이상 경과한(방치된) 짖음 미션을 실패 처리합니다.
+     */
+    @Scheduled(fixedRate = 60000)
+    @Transactional
+    public void checkOverdueBarkingMissions() {
+        LocalDateTime thirtyMinsAgo = LocalDateTime.now().minusMinutes(30);
+        List<Mission> overdueMissions = missionRepository.findAllByTypeAndIsCompletedFalseAndIssuedAtBefore(
+                NotificationType.BARKING.name(), thirtyMinsAgo);
+
+        for (Mission mission : overdueMissions) {
+            log.info("미션 [{}] - 30분 이상 방치되어 자동 실패 처리", mission.getId());
+            
+            // 1. 미션 종료 처리
+            long overdueSec = java.time.Duration.between(mission.getIssuedAt(), LocalDateTime.now()).getSeconds();
+            mission.complete(LocalDateTime.now(), overdueSec);
+            missionRepository.save(mission);
+
+            // 2. Command 큐에 BARK_STOP 명령 등록
+            Command command = Command.builder()
+                    .device(mission.getDevice())
+                    .command("BARK_STOP")
+                    .durationSec(0)
+                    .build();
+            commandRepository.save(command);
+
+            // 3. 점수 패널티 적용 (-10점)
+            scoreService.processScoreEvent(mission.getDevice().getDeviceId(), "BARK_TIMEOUT", -10, "짖음 미션 30분 초과 방치 실패");
         }
     }
 }
