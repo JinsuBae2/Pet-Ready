@@ -21,6 +21,8 @@ public class SwaggerConfig {
     @Bean
     public OpenAPI openAPI() {
         return new OpenAPI()
+                .addServersItem(new io.swagger.v3.oas.models.servers.Server().url("http://220.67.0.141:8080").description("안드로이드 연동 테스트 서버"))
+                .addServersItem(new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("로컬 개발 서버"))
                 .info(new Info()
                         .title("Pet-Ready Backend API")
                         .description("반려견 양육 시뮬레이터 '펫-레디' 백엔드 API 명세서입니다.")

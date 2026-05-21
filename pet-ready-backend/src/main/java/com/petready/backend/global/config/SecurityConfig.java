@@ -55,6 +55,10 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 // 테스트용 산책 API 접근 허용 (요청사항 반영)
                 .requestMatchers("/api/v1/walk/end").permitAll()
+                // 아두이노(기기) 통신용 API 인증 생략 (403 에러 방지)
+                .requestMatchers("/api/v1/pet/**").permitAll()
+                // 푸시 알림 수동 테스트 API 허용
+                .requestMatchers("/api/v1/fcm/**").permitAll()
                 // 그 외 모든 요청은 인증 필요
                 .anyRequest().authenticated()
             )

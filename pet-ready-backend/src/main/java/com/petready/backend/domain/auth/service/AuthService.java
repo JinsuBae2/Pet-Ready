@@ -42,14 +42,20 @@ public class AuthService {
     }
 
     /**
-     * 로그인을 수행하고 토큰을 발급합니다.
+     * 로그인을 수행하고 토큰을 발급하며, FCM 토큰이 전달된 경우 업데이트합니다.
      */
+    @Transactional
     public TokenResponse login(LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
         if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
             throw new RuntimeException("비밀번호가 일치하지 않습니다.");
+        }
+
+        // 안드로이드 기기에서 FCM 토큰을 함께 보냈다면 업데이트 (영속성 컨텍스트에 의해 자동 반영됨)
+        if (request.getFcmToken() != null && !request.getFcmToken().isBlank()) {
+            user.updateFcmToken(request.getFcmToken());
         }
 
         return TokenResponse.builder()

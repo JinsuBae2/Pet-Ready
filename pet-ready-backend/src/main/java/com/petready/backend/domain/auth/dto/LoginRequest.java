@@ -19,4 +19,8 @@ public class LoginRequest {
 
     @NotBlank(message = "비밀번호는 필수입니다.")
     private String password;
+
+    @NotBlank(message = "FCM 토큰은 필수입니다.")
+    @Schema(description = "기기의 FCM 푸시 토큰 (필수)", requiredMode = Schema.RequiredMode.REQUIRED)
+    private String fcmToken;
 }

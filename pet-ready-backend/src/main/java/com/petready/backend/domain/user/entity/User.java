@@ -46,4 +46,11 @@ public class User extends BaseEntity {
      */
     @Column(name = "fcm_token")
     private String fcmToken;
+
+    /**
+     * 사용자의 FCM 토큰을 갱신합니다.
+     */
+    public void updateFcmToken(String fcmToken) {
+        this.fcmToken = fcmToken;
+    }
 }
