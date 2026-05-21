@@ -59,8 +59,8 @@ public class WalkIntegrationTest {
         WalkEndRequest walkReq = new WalkEndRequest();
         ReflectionTestUtils.setField(walkReq, "deviceId", "DEVICE_A");
         ReflectionTestUtils.setField(walkReq, "userId", 1L);
-        ReflectionTestUtils.setField(walkReq, "distanceKm", 2.0);
-        ReflectionTestUtils.setField(walkReq, "durationSec", 3600);
+        ReflectionTestUtils.setField(walkReq, "distanceKm", new java.math.BigDecimal("2.0"));
+        ReflectionTestUtils.setField(walkReq, "durationSec", 3600L);
         
         walkService.endWalk(walkReq);
 
