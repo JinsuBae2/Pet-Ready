@@ -19,4 +19,12 @@ public interface DeviceRepository extends JpaRepository<Device, String> {
      * @return 기기 목록
      */
     List<Device> findAllByUserId(Long userId);
+
+    /**
+     * 사용자의 이메일을 기준으로 소유한 기기를 조회합니다.
+     *
+     * @param email 사용자의 이메일
+     * @return 기기 엔티티 (Optional)
+     */
+    java.util.Optional<Device> findByUserEmail(String email);
 }

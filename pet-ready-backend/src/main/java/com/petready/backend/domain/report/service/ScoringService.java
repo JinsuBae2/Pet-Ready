@@ -174,11 +174,11 @@ public class ScoringService {
     }
 
     private String determineGrade(BigDecimal score) {
-        if (score.compareTo(new BigDecimal("90")) >= 0) return "A";
-        if (score.compareTo(new BigDecimal("80")) >= 0) return "B";
-        if (score.compareTo(new BigDecimal("70")) >= 0) return "C";
-        if (score.compareTo(new BigDecimal("60")) >= 0) return "D";
-        if (score.compareTo(new BigDecimal("40")) >= 0) return "E";
+        if (score.compareTo(new BigDecimal("90")) >= 0) return "A+";
+        if (score.compareTo(new BigDecimal("80")) >= 0) return "A";
+        if (score.compareTo(new BigDecimal("70")) >= 0) return "B+";
+        if (score.compareTo(new BigDecimal("60")) >= 0) return "B";
+        if (score.compareTo(new BigDecimal("50")) >= 0) return "C";
         return "F";
     }
 }
