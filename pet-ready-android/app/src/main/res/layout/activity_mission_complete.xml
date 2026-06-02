@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:gravity="center"
+    android:orientation="vertical"
+    android:padding="28dp">
+
+    <TextView
+        android:layout_width="128dp"
+        android:layout_height="128dp"
+        android:background="@drawable/bg_primary_pill"
+        android:gravity="center"
+        android:text="✓"
+        android:textColor="@color/white"
+        android:textSize="58sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="34dp"
+        android:gravity="center"
+        android:text="미션 완료!"
+        android:textColor="@color/pet_text"
+        android:textSize="30sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvMissionCompleteMessage"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="18dp"
+        android:gravity="center"
+        android:textColor="@color/pet_text_muted"
+        android:textSize="17sp" />
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="72dp" />
+
+    <Button
+        android:id="@+id/btnMissionCompleteConfirm"
+        android:layout_width="match_parent"
+        android:layout_height="58dp"
+        android:background="@drawable/bg_primary_pill"
+        android:text="확인"
+        android:textAllCaps="false"
+        android:textColor="@color/white"
+        android:textSize="17sp"
+        android:textStyle="bold" />
+</LinearLayout>

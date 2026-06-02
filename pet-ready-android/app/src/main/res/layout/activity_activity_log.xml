@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="활동 기록"
+                android:textColor="@color/pet_text"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/layoutActivityLogs"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:background="@drawable/bg_card"
+                android:elevation="4dp"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="86dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_bottom_nav"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:id="@+id/btnNavHome"
+            style="@style/MoreBottomNavItem"
+            android:text="홈" />
+
+        <TextView
+            android:id="@+id/btnNavMission"
+            style="@style/MoreBottomNavItem"
+            android:text="미션" />
+
+        <TextView
+            android:id="@+id/btnNavWalk"
+            style="@style/MoreBottomNavItem"
+            android:text="산책" />
+
+        <TextView
+            android:id="@+id/btnNavExpense"
+            style="@style/MoreBottomNavItem"
+            android:text="지출" />
+
+        <TextView
+            android:id="@+id/btnNavMore"
+            style="@style/MoreBottomNavItem"
+            android:text="더보기" />
+    </LinearLayout>
+</LinearLayout>

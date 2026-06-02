@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="22dp">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:background="@drawable/bg_hero_blue"
+            android:elevation="5dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="기기 연결"
+                android:textColor="@color/white"
+                android:textSize="34sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:text="반려견 로봇과 앱을 연결하고 실시간 상태를 확인해요."
+                android:textColor="#EAF0FF"
+                android:textSize="17sp" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tvConnectStatus"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_status_fail"
+            android:text="로봇 연결 상태 확인 중..."
+            android:textColor="@color/pet_text"
+            android:textSize="18sp" />
+
+        <Button
+            android:id="@+id/btnCheckRobot"
+            android:layout_width="match_parent"
+            android:layout_height="62dp"
+            android:layout_marginTop="18dp"
+            android:background="@drawable/bg_primary_pill"
+            android:backgroundTint="@null"
+            app:backgroundTint="@null"
+            android:text="다시 확인하기"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnQrConnect"
+            android:layout_width="match_parent"
+            android:layout_height="62dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_secondary_pill"
+            android:backgroundTint="@null"
+            app:backgroundTint="@null"
+            android:text="QR 코드로 연결"
+            android:textAllCaps="false"
+            android:textColor="@color/pet_text"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+
+        <Button
+            android:id="@+id/btnDemoEnter"
+            android:layout_width="match_parent"
+            android:layout_height="62dp"
+            android:layout_marginTop="10dp"
+            android:background="@drawable/bg_primary_pill"
+            android:backgroundTint="@null"
+            app:backgroundTint="@null"
+            android:text="데모 앱으로 진입"
+            android:textAllCaps="false"
+            android:textColor="@color/white"
+            android:textSize="17sp"
+            android:textStyle="bold" />
+    </LinearLayout>
+</ScrollView>

@@ -1,0 +1,76 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app">
+
+    <LinearLayout
+        android:id="@+id/layoutMissionContainer"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="20dp">
+
+        <TextView
+            android:id="@+id/tvMissionTitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="오늘의 미션"
+            android:textColor="@color/pet_text"
+            android:textSize="35sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tvMissionSubtitle"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:text="미션을 수행하면 로봇과 서버 확인 후 자동으로 반영돼요."
+            android:textColor="@color/pet_text_muted"
+            android:textSize="17sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:background="@drawable/bg_card"
+            android:elevation="5dp"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tvMissionProgress"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="완료율 0%"
+                android:textColor="@color/pet_text"
+                android:textSize="25sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvMissionStatus"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:text="미션을 불러오는 중..."
+                android:textColor="@color/pet_text_muted"
+                android:textSize="16sp" />
+
+            <ProgressBar
+                android:id="@+id/progressMission"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:layout_marginTop="14dp"
+                android:max="100"
+                android:progress="0"
+                android:progressTint="@color/pet_primary" />
+
+            <LinearLayout
+                android:id="@+id/layoutMissionList"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="22dp"
+                android:orientation="vertical" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>

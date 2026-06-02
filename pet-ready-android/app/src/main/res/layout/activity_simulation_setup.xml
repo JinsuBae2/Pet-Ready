@@ -1,0 +1,123 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:fillViewport="true">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="22dp">
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="시뮬레이션 시작"
+            android:textColor="@color/pet_text"
+            android:textSize="32sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="8dp"
+            android:text="펫 이름과 사용 기간을 정하면 3주 돌봄 시뮬레이션이 시작됩니다."
+            android:textColor="@color/pet_text_muted"
+            android:textSize="15sp" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/bg_card"
+            android:elevation="5dp"
+            android:orientation="vertical">
+
+            <EditText
+                android:id="@+id/etSetupPetName"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:background="@drawable/bg_input"
+                android:hint="펫 이름"
+                android:singleLine="true"
+                android:textColor="@color/pet_text"
+                android:textColorHint="@color/pet_text_muted" />
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="18dp"
+                android:text="사용 기간"
+                android:textColor="@color/pet_text"
+                android:textSize="18sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="10dp"
+                android:orientation="horizontal">
+
+                <Button
+                    android:id="@+id/btnOneWeek"
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_marginEnd="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_secondary_pill"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="1주"
+                    android:textAllCaps="false"
+                    android:textColor="@color/pet_primary_dark"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnTwoWeeks"
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_marginStart="5dp"
+                    android:layout_marginEnd="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_secondary_pill"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="2주"
+                    android:textAllCaps="false"
+                    android:textColor="@color/pet_primary_dark"
+                    android:textStyle="bold" />
+
+                <Button
+                    android:id="@+id/btnThreeWeeks"
+                    android:layout_width="0dp"
+                    android:layout_height="54dp"
+                    android:layout_marginStart="5dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_activity_log_button"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="3주"
+                    android:textAllCaps="false"
+                    android:textColor="@color/pet_primary_dark"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnStartSimulation"
+                android:layout_width="match_parent"
+                android:layout_height="60dp"
+                android:layout_marginTop="22dp"
+                android:background="@drawable/bg_primary_pill"
+                android:backgroundTint="@null"
+                app:backgroundTint="@null"
+                android:text="시작하기"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="17sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </LinearLayout>
+</ScrollView>
