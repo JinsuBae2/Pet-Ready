@@ -45,4 +45,14 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
      * @return 전체 미션 목록
      */
     List<Mission> findAllByDeviceUserEmail(String email);
+
+    /**
+     * 특정 기기의 지정된 시간 이후에 발급된 모든 미션 목록을 조회합니다.
+     * (오늘의 미션 목록 조회를 위해 사용됩니다.)
+     * 
+     * @param deviceId 기기 ID
+     * @param time 기준 시간 (오늘 자정 등)
+     * @return 지정 시간 이후 발급된 미션 목록
+     */
+    List<Mission> findAllByDeviceDeviceIdAndIssuedAtAfter(String deviceId, java.time.LocalDateTime time);
 }

@@ -1,5 +1,8 @@
 package com.petready.backend.domain.mission.service;
 
+import com.petready.backend.domain.device.entity.Device;
+import com.petready.backend.domain.device.repository.DeviceRepository;
+import com.petready.backend.domain.mission.dto.MissionResponse;
 import com.petready.backend.domain.mission.entity.Mission;
 import com.petready.backend.domain.mission.repository.MissionRepository;
 import jakarta.persistence.EntityNotFoundException;
@@ -10,6 +13,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 
 /**
  * 사용자 미션 관련 비즈니스 로직을 처리하는 서비스입니다.
@@ -21,6 +25,30 @@ import java.time.temporal.ChronoUnit;
 public class MissionService {
 
     private final MissionRepository missionRepository;
+    private final DeviceRepository deviceRepository;
+
+    /**
+     * 특정 사용자가 등록한 기기의 오늘(자정 이후) 발급된 미션 목록을 조회합니다.
+     * 
+     * @param email 사용자 이메일
+     * @return 오늘의 미션 응답 DTO 리스트
+     */
+    public List<MissionResponse> getTodayMissions(String email) {
+        // 로그인된 유저 이메일로 매핑된 기기를 조회하여 존재 여부를 확인합니다.
+        Device device = deviceRepository.findByUserEmail(email)
+                .orElseThrow(() -> new EntityNotFoundException("등록된 기기가 존재하지 않습니다."));
+
+        // 오늘 자정 시각(00:00:00)을 구하여 기준 시간으로 설정합니다.
+        LocalDateTime todayStart = LocalDateTime.now().with(java.time.LocalTime.MIN);
+
+        // 오늘 자정 이후 기기에 발급된 미션 목록을 조회합니다.
+        List<Mission> missions = missionRepository.findAllByDeviceDeviceIdAndIssuedAtAfter(device.getDeviceId(), todayStart);
+
+        // 엔티티 목록을 DTO 목록으로 변환하여 반환합니다.
+        return missions.stream()
+                .map(MissionResponse::from)
+                .collect(java.util.stream.Collectors.toList());
+    }
 
     /**
      * 사용자가 미션을 완료(응답) 처리합니다.
