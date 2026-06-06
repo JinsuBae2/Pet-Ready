@@ -6,13 +6,16 @@ import com.petready.backend.domain.device.entity.Device;
 import com.petready.backend.domain.device.repository.DeviceRepository;
 import com.petready.backend.domain.mission.dto.MissionResponse;
 import com.petready.backend.domain.mission.entity.Mission;
+import com.petready.backend.domain.mission.entity.MissionStatus;
 import com.petready.backend.domain.mission.repository.MissionRepository;
 import com.petready.backend.domain.mission.service.MissionService;
 import com.petready.backend.domain.medical.entity.MedicalFeeCache;
 import com.petready.backend.domain.medical.repository.MedicalFeeCacheRepository;
+import com.petready.backend.domain.notification.service.FcmNotificationService;
 import com.petready.backend.domain.report.entity.PetReport;
 import com.petready.backend.domain.report.repository.PetReportRepository;
 import com.petready.backend.domain.user.entity.User;
+import com.petready.backend.global.enums.NotificationType;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -22,6 +25,7 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.access.AccessDeniedException;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
@@ -51,6 +55,9 @@ public class MissionServiceTest {
 
     @Mock
     private PetReportRepository reportRepository;
+
+    @Mock
+    private FcmNotificationService fcmNotificationService;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();
@@ -109,6 +116,7 @@ public class MissionServiceTest {
         User mockUser = User.builder()
                 .email(email)
                 .nickname("진수")
+                .fcmToken("FCM_TOKEN_TEST")
                 .build();
 
         Device mockDevice = Device.builder()
@@ -121,6 +129,7 @@ public class MissionServiceTest {
                 .id(missionId)
                 .device(mockDevice)
                 .type("MEDICAL")
+                .status(MissionStatus.PENDING)
                 .issuedAt(LocalDateTime.now().minusHours(1))
                 .isCompleted(false)
                 .build();
@@ -153,13 +162,18 @@ public class MissionServiceTest {
         ArgumentCaptor<PetReport> reportCaptor = ArgumentCaptor.forClass(PetReport.class);
 
         // when
-        missionService.completeMission(missionId);
+        missionService.completeMission(missionId, email);
 
         // then
-        // 1. 미션의 완료 여부가 true로 갱신되었는지 확인
+        // 1. 미션의 완료 여부가 true로, status가 COMPLETED로 갱신되었는지 확인
         assertTrue(mockMedicalMission.getIsCompleted());
+        assertEquals(MissionStatus.COMPLETED, mockMedicalMission.getStatus());
 
-        // 2. PetReport의 누적 합산 및 상세 JSON 영수증 Append 검증
+        // 2. FCM 알림 발송이 1회 호출되었는지 확인
+        verify(fcmNotificationService, times(1)).sendNotification(
+                eq("FCM_TOKEN_TEST"), anyString(), anyString(), eq(NotificationType.MISSION_COMPLETED));
+
+        // 3. PetReport의 누적 합산 및 상세 JSON 영수증 Append 검증
         verify(reportRepository, times(1)).save(reportCaptor.capture());
         PetReport updatedReport = reportCaptor.getValue();
 
@@ -177,5 +191,93 @@ public class MissionServiceTest {
         assertTrue(parsedItems.size() >= 2); 
         assertEquals("가상 유기견 입양비", parsedItems.get(0).get("item"));
         assertTrue(parsedItems.stream().anyMatch(item -> "엑스선촬영비/판독료".equals(item.get("item")) || "초진 진찰료(개)".equals(item.get("item"))));
+    }
+
+    @Test
+    @DisplayName("실패: 타인의 미션 ID로 접근(시작/조회/완료)을 시도할 경우 AccessDeniedException 예외가 발생한다")
+    void validateMissionOwnership_AccessDeniedException_Fail() {
+        // given
+        Long missionId = 1L;
+        String requesterEmail = "attacker@example.com";
+        String ownerEmail = "owner@example.com";
+
+        User owner = User.builder().email(ownerEmail).build();
+        Device device = Device.builder().user(owner).build();
+        Mission mission = Mission.builder().id(missionId).device(device).build();
+
+        when(missionRepository.findById(missionId)).thenReturn(Optional.of(mission));
+
+        // when & then
+        assertThrows(AccessDeniedException.class, () -> {
+            missionService.startMission(missionId, requesterEmail);
+        });
+
+        assertThrows(AccessDeniedException.class, () -> {
+            missionService.getMission(missionId, requesterEmail);
+        });
+
+        assertThrows(AccessDeniedException.class, () -> {
+            missionService.completeMission(missionId, requesterEmail);
+        });
+    }
+
+    @Test
+    @DisplayName("성공: 미션 시작 요청 시 이미 IN_PROGRESS 상태라면 예외 없이 기존 미션 정보를 리턴한다 (멱등성 보장)")
+    void startMission_Idempotency_Success() {
+        // given
+        Long missionId = 1L;
+        String email = "owner@example.com";
+
+        User owner = User.builder().email(email).build();
+        Device device = Device.builder().user(owner).build();
+        Mission missionInProgress = Mission.builder()
+                .id(missionId)
+                .device(device)
+                .type("WALK")
+                .status(MissionStatus.IN_PROGRESS)
+                .issuedAt(LocalDateTime.now())
+                .isCompleted(false)
+                .build();
+
+        when(missionRepository.findById(missionId)).thenReturn(Optional.of(missionInProgress));
+
+        // when
+        MissionResponse response = missionService.startMission(missionId, email);
+
+        // then
+        assertNotNull(response);
+        assertEquals("IN_PROGRESS", response.getStatus());
+        verify(missionRepository, never()).save(any(Mission.class)); // 추가적인 DB save 호출 없음 검증
+    }
+
+    @Test
+    @DisplayName("성공: 이미 완료된 미션에 완료 요청이 오면 FCM 발송과 진료비 정산 등의 추가 로직을 즉시 스킵(Return)한다")
+    void completeMission_DuplicateCall_Skip_Success() {
+        // given
+        Long missionId = 1L;
+        String email = "owner@example.com";
+
+        User owner = User.builder().email(email).fcmToken("token123").build();
+        Device device = Device.builder().user(owner).build();
+        Mission completedMission = Mission.builder()
+                .id(missionId)
+                .device(device)
+                .type("MEDICAL")
+                .status(MissionStatus.COMPLETED)
+                .isCompleted(true)
+                .issuedAt(LocalDateTime.now())
+                .build();
+
+        when(missionRepository.findById(missionId)).thenReturn(Optional.of(completedMission));
+
+        // when
+        missionService.completeMission(missionId, email);
+
+        // then
+        // FCM 전송 메소드가 호출되지 않았는지 검증
+        verify(fcmNotificationService, never()).sendNotification(anyString(), anyString(), anyString(), any(NotificationType.class));
+        // PetReport 레포지토리가 조회되지도 않고 저장되지도 않았는지 검증
+        verify(reportRepository, never()).findByUserEmail(anyString());
+        verify(reportRepository, never()).save(any(PetReport.class));
     }
 }

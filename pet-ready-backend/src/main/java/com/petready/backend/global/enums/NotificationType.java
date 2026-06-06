@@ -17,5 +17,10 @@ public enum NotificationType {
     /**
      * 향후 의료비 알림
      */
-    MEDICAL
+    MEDICAL,
+
+    /**
+     * 미션 완료 알림
+     */
+    MISSION_COMPLETED
 }

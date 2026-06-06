@@ -56,18 +56,65 @@ public class MissionController {
      */
     @Operation(
         summary = "일반 미션 수동 완료 처리 API", 
-        description = "사용자가 안드로이드 앱에서 특정 돌봄(병원, 접종 등) 미션의 완료 버튼을 수동으로 눌렀을 때 호출됩니다. 해당 미션의 완료 여부(is_completed = true)를 갱신하고 점수 정산 로직을 실행시킵니다."
+        description = "사용자가 안드로이드 앱에서 특정 돌봄(병원, 접종 등) 미션의 완료 버튼을 수동으로 눌렀을 때 호출됩니다. 해당 미션의 상태를 COMPLETED로 갱신하고, FCM 알림을 전송하며, 중복 완료 요청 시 안전하게 스킵합니다."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "미션 완료 상태 저장 성공"),
         @ApiResponse(responseCode = "404", description = "요청한 미션 일련번호(id)가 데이터베이스에 존재하지 않음"),
+        @ApiResponse(responseCode = "403", description = "타인의 미션 ID로 접근하여 권한이 없는 경우"),
         @ApiResponse(responseCode = "401", description = "유효한 JWT 인증 정보가 누락된 경우")
     })
     @PostMapping("/{id}/complete")
-    public ResponseEntity<Void> completeMission(@PathVariable("id") Long missionId) {
+    public ResponseEntity<Void> completeMission(
+            @PathVariable("id") Long missionId,
+            @AuthenticationPrincipal UserDetails userDetails) {
         
-        // 해당 미션의 상태를 강제로 완료 처리하고 이력을 기록합니다.
-        missionService.completeMission(missionId);
+        // 해당 미션의 상태를 강제로 완료 처리하고 이력을 기록하며 FCM을 보냅니다.
+        missionService.completeMission(missionId, userDetails.getUsername());
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 사용자가 안드로이드 앱에서 특정 미션의 '시작' 버튼을 눌렀을 때 호출되어 상태를 진행 중으로 변경합니다.
+     */
+    @Operation(
+        summary = "미션 진행 시작 API", 
+        description = "사용자가 안드로이드 앱에서 특정 미션의 진행을 시작할 때 호출됩니다. 해당 미션의 상태를 IN_PROGRESS로 변경하고, startedAt 시각을 기록하며, 중복 요청 시 기존 진행중 데이터를 안전하게 반환합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "미션 시작 상태 저장 성공 및 현재 미션 정보 반환"),
+        @ApiResponse(responseCode = "404", description = "요청한 미션 일련번호(id)가 데이터베이스에 존재하지 않음"),
+        @ApiResponse(responseCode = "403", description = "타인의 미션 ID로 접근하여 권한이 없는 경우"),
+        @ApiResponse(responseCode = "401", description = "유효한 JWT 인증 정보가 누락된 경우")
+    })
+    @PostMapping("/{id}/start")
+    public ResponseEntity<MissionResponse> startMission(
+            @PathVariable("id") Long missionId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        MissionResponse response = missionService.startMission(missionId, userDetails.getUsername());
+        return ResponseEntity.ok(response);
+    }
+
+    /**
+     * 안드로이드 앱에서 폴링하며 미션 상태를 실시간 동기화하기 위해 개별 미션을 조회합니다.
+     */
+    @Operation(
+        summary = "단일 미션 상태 조회 API", 
+        description = "안드로이드 앱에서 미션의 실시간 진행 상태를 폴링하기 위해 특정 미션의 정보를 단건 조회합니다. 기기 소유주의 정보와 대조하여 보안을 확보합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "단일 미션 상태 조회 성공"),
+        @ApiResponse(responseCode = "404", description = "요청한 미션 일련번호(id)가 데이터베이스에 존재하지 않음"),
+        @ApiResponse(responseCode = "403", description = "타인의 미션 ID로 접근하여 권한이 없는 경우"),
+        @ApiResponse(responseCode = "401", description = "유효한 JWT 인증 정보가 누락된 경우")
+    })
+    @GetMapping("/{id}")
+    public ResponseEntity<MissionResponse> getMission(
+            @PathVariable("id") Long missionId,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        MissionResponse response = missionService.getMission(missionId, userDetails.getUsername());
+        return ResponseEntity.ok(response);
     }
 }

@@ -62,6 +62,29 @@ public class Mission extends BaseEntity {
     private Boolean isCompleted = false;
 
     /**
+     * 미션 상태 (기본값 PENDING)
+     */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    private MissionStatus status = MissionStatus.PENDING;
+
+    /**
+     * 미션 진행 시작 시각
+     */
+    @Column(name = "started_at")
+    private LocalDateTime startedAt;
+
+    /**
+     * 미션을 진행 시작 상태로 전환하고 시작 시각을 기록합니다.
+     * @param startedAt 시작 시각
+     */
+    public void start(LocalDateTime startedAt) {
+        this.status = MissionStatus.IN_PROGRESS;
+        this.startedAt = startedAt;
+    }
+
+    /**
      * 미션을 완료 처리하고 응답 시간을 기록합니다.
      * @param respondedAt 응답한 시각
      * @param responseTimeSec 발급부터 응답까지 걸린 시간(초)
@@ -69,6 +92,7 @@ public class Mission extends BaseEntity {
     public void complete(LocalDateTime respondedAt, Long responseTimeSec) {
         this.respondedAt = respondedAt;
         this.responseTimeSec = responseTimeSec;
+        this.status = MissionStatus.COMPLETED;
         this.isCompleted = true;
     }
 }

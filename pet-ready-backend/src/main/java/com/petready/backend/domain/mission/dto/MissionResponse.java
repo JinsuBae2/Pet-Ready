@@ -37,6 +37,15 @@ public class MissionResponse {
     @Schema(description = "미션 완료 여부 (true: 완료, false: 미완료)", example = "true")
     private Boolean isCompleted;
 
+    @Schema(description = "미션의 실시간 상태 (PENDING, IN_PROGRESS, COMPLETED, FAILED)", example = "IN_PROGRESS")
+    private String status;
+
+    @Schema(description = "미션 진행 시작 시각", example = "2026-06-06T15:30:00")
+    private LocalDateTime startedAt;
+
+    @Schema(description = "미션 성공 완료 시각 (respondedAt과 동일)", example = "2026-06-06T15:32:10")
+    private LocalDateTime completedAt;
+
     /**
      * Mission 엔티티를 MissionResponse DTO 객체로 변환해주는 빌더 기반 정적 팩토리 메서드입니다.
      *
@@ -51,6 +60,9 @@ public class MissionResponse {
                 .respondedAt(mission.getRespondedAt())
                 .responseTimeSec(mission.getResponseTimeSec())
                 .isCompleted(mission.getIsCompleted())
+                .status(mission.getStatus() != null ? mission.getStatus().name() : null)
+                .startedAt(mission.getStartedAt())
+                .completedAt(mission.getRespondedAt())
                 .build();
     }
 }

@@ -4,11 +4,15 @@ import com.petready.backend.domain.device.entity.Device;
 import com.petready.backend.domain.device.repository.DeviceRepository;
 import com.petready.backend.domain.mission.dto.MissionResponse;
 import com.petready.backend.domain.mission.entity.Mission;
+import com.petready.backend.domain.mission.entity.MissionStatus;
 import com.petready.backend.domain.mission.repository.MissionRepository;
 import com.petready.backend.domain.medical.entity.MedicalFeeCache;
 import com.petready.backend.domain.medical.repository.MedicalFeeCacheRepository;
+import com.petready.backend.domain.notification.service.FcmNotificationService;
 import com.petready.backend.domain.report.entity.PetReport;
 import com.petready.backend.domain.report.repository.PetReportRepository;
+import com.petready.backend.domain.user.entity.User;
+import com.petready.backend.global.enums.NotificationType;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.EntityNotFoundException;
@@ -39,19 +43,26 @@ public class MissionService {
     private final MedicalFeeCacheRepository medicalFeeCacheRepository;
     private final PetReportRepository reportRepository;
     private final ObjectMapper objectMapper;
+    private final FcmNotificationService fcmNotificationService;
 
     /**
      * 사용자가 미션을 완료(응답) 처리합니다.
      * 
      * @param missionId 완료할 미션의 식별자
+     * @param email 사용자 이메일 (소유권 검증용)
      */
     @Transactional
-    public void completeMission(Long missionId) {
+    public void completeMission(Long missionId, String email) {
         Mission mission = missionRepository.findById(missionId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 미션입니다."));
 
-        if (Boolean.TRUE.equals(mission.getIsCompleted())) {
-            throw new IllegalStateException("이미 완료된 미션입니다.");
+        // 1. 소유권 검증
+        validateMissionOwnership(mission, email);
+
+        // 2. 멱등성 및 중복 완료 처리 방어: 이미 완료된 미션인 경우 로직 스킵하여 FCM 중복 발송 차단
+        if (MissionStatus.COMPLETED == mission.getStatus() || Boolean.TRUE.equals(mission.getIsCompleted())) {
+            log.info("미션 [{}]은 이미 완료된 상태이므로 완료 및 FCM 발송 로직을 스킵합니다.", missionId);
+            return;
         }
 
         LocalDateTime now = LocalDateTime.now();
@@ -61,10 +72,22 @@ public class MissionService {
         missionRepository.save(mission);
         log.info("미션 [{}] 완료 처리 완료. 응답 시간: {}초", missionId, responseTimeSec);
 
+        // 3. 완료 시 FCM 알림 전송 (MISSION_COMPLETED 전용 JSON 데이터 페이로드 전송)
+        User user = mission.getDevice().getUser();
+        if (user != null && user.getFcmToken() != null && !user.getFcmToken().isEmpty()) {
+            fcmNotificationService.sendNotification(
+                    user.getFcmToken(),
+                    "미션 성공 완료!",
+                    "[" + mission.getType() + "] 미션을 성공적으로 완료했습니다.",
+                    NotificationType.MISSION_COMPLETED
+            );
+        } else {
+            log.warn("사용자 [{}]의 FCM 토큰이 존재하지 않아 미션 완료 알림을 전송하지 못했습니다.", user != null ? user.getEmail() : "null");
+        }
+
         // [고도화] 완료된 미션의 타입이 "MEDICAL"인 경우, 진료비 목록에서 랜덤하게 진료비 영수증 청구 (방어벽 2 반영)
         if ("MEDICAL".equalsIgnoreCase(mission.getType())) {
             // 해당 유저의 PetReport 조회
-            String email = mission.getDevice().getUser().getEmail();
             PetReport report = reportRepository.findByUserEmail(email)
                     .orElseThrow(() -> new EntityNotFoundException("해당 사용자의 리포트가 존재하지 않습니다."));
 
@@ -123,6 +146,61 @@ public class MissionService {
     }
 
     /**
+     * 미션의 소유주 이메일과 인증된 이메일이 일치하는지 검증합니다.
+     */
+    private void validateMissionOwnership(Mission mission, String email) {
+        if (mission.getDevice() == null || mission.getDevice().getUser() == null || 
+                !mission.getDevice().getUser().getEmail().equals(email)) {
+            throw new org.springframework.security.access.AccessDeniedException("해당 미션에 대한 접근 권한이 없습니다.");
+        }
+    }
+
+    /**
+     * 사용자가 미션의 진행을 시작합니다. (status: IN_PROGRESS, startedAt 기록)
+     * 
+     * @param missionId 시작할 미션 식별자
+     * @param email 사용자 이메일 (소유권 검증용)
+     * @return 갱신된 미션 DTO
+     */
+    @Transactional
+    public MissionResponse startMission(Long missionId, String email) {
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 미션입니다."));
+
+        // 소유권 검증
+        validateMissionOwnership(mission, email);
+
+        // 멱등성 보장: 중복 시작 요청 시 기존 IN_PROGRESS 또는 COMPLETED 반환
+        if (mission.getStatus() == MissionStatus.IN_PROGRESS || mission.getStatus() == MissionStatus.COMPLETED) {
+            log.info("미션 [{}]이 이미 진행 중이거나 완료되었습니다. 기존 상태를 그대로 반환합니다.", missionId);
+            return MissionResponse.from(mission);
+        }
+
+        mission.start(LocalDateTime.now());
+        missionRepository.save(mission);
+        log.info("미션 [{}] 진행 시작 처리 완료.", missionId);
+
+        return MissionResponse.from(mission);
+    }
+
+    /**
+     * 단일 미션의 상세 정보 및 진행 상태를 조회합니다. (안드 폴링 대응용)
+     * 
+     * @param missionId 조회할 미션 식별자
+     * @param email 사용자 이메일 (소유권 검증용)
+     * @return 미션 상세 응답 DTO
+     */
+    public MissionResponse getMission(Long missionId, String email) {
+        Mission mission = missionRepository.findById(missionId)
+                .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 미션입니다."));
+
+        // 소유권 검증
+        validateMissionOwnership(mission, email);
+
+        return MissionResponse.from(mission);
+    }
+
+    /**
      * 특정 사용자가 등록한 기기의 오늘(자정 이후) 발급된 미션 목록을 조회합니다.
      * 오늘 발급된 필수 일일 미션 3종(WALK, FEEDING, ROBOT_PLAY)이 없다면 자동 초기화 생성합니다. (방어벽 1 반영)
      * 
@@ -156,6 +234,7 @@ public class MissionService {
                                 .device(device)
                                 .type(type)
                                 .issuedAt(LocalDateTime.now())
+                                .status(MissionStatus.PENDING)
                                 .isCompleted(false)
                                 .build();
                         missionRepository.save(dailyMission);
