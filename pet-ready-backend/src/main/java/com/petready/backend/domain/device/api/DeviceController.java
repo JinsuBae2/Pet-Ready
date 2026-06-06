@@ -1,6 +1,7 @@
 package com.petready.backend.domain.device.api;
 
 import com.petready.backend.domain.device.dto.DeviceRegisterRequest;
+import com.petready.backend.domain.device.dto.MyDeviceResponse;
 import com.petready.backend.domain.device.service.DeviceService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -11,6 +12,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -72,5 +74,26 @@ public class DeviceController {
         // 해당 유저의 기기 반려견 이름을 갱신합니다.
         deviceService.updatePetName(request.getPetName(), userDetails.getUsername());
         return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 현재 로그인된 사용자의 소유 기기 정보를 조회하여 반환합니다.
+     */
+    @Operation(
+        summary = "현재 사용자 기기 정보 조회 API", 
+        description = "현재 로그인된 계정에 이미 등록 연동된 IoT 기기(디바이스)가 있는지 확인하고, 존재한다면 기기 번호(deviceId), 설정된 반려견 닉네임(petName), 하루 산책 목표(walkGoalKm) 및 온라인 여부를 반환합니다. 안드로이드 모바일 앱은 로그인 후 이 API를 호출해 기기 등록 화면을 패스할지 여부를 결정합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "기기 정보 조회 성공"),
+        @ApiResponse(responseCode = "404", description = "현재 사용자 계정에 연결된 기기가 존재하지 않음"),
+        @ApiResponse(responseCode = "401", description = "유효한 JWT 인증 정보가 누락된 경우")
+    })
+    @GetMapping("/my")
+    public ResponseEntity<MyDeviceResponse> getMyDevice(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        // 인증된 사용자 이메일을 기반으로 소유 기기 정보를 조회해 DTO로 반환합니다.
+        MyDeviceResponse response = deviceService.getMyDevice(userDetails.getUsername());
+        return ResponseEntity.ok(response);
     }
 }

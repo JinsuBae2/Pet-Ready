@@ -1,6 +1,7 @@
 package com.petready.backend.domain.device.service;
 
 import com.petready.backend.domain.device.dto.DeviceRegisterRequest;
+import com.petready.backend.domain.device.dto.MyDeviceResponse;
 import com.petready.backend.domain.device.entity.Device;
 import com.petready.backend.domain.device.repository.DeviceRepository;
 import com.petready.backend.domain.score.entity.RealTimeScore;
@@ -89,5 +90,20 @@ public class DeviceService {
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저에게 등록된 기기가 없습니다."));
         device.updatePetName(petName);
         deviceRepository.save(device);
+     }
+
+    /**
+     * 특정 사용자 이메일로 등록된 기기 정보를 조회하여 반환합니다.
+     *
+     * @param email 사용자 이메일
+     * @return 등록된 기기 정보 응답 DTO
+     */
+    public MyDeviceResponse getMyDevice(String email) {
+        // 유저 이메일로 매핑된 기기를 조회합니다. 기기가 없을 시 EntityNotFoundException(404)을 던집니다.
+        Device device = deviceRepository.findByUserEmail(email)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("등록된 기기가 존재하지 않습니다."));
+        
+        // 기기 엔티티를 MyDeviceResponse DTO로 변환하여 반환합니다.
+        return MyDeviceResponse.from(device);
     }
 }
