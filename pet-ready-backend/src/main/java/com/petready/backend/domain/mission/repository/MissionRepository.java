@@ -37,6 +37,27 @@ public interface MissionRepository extends JpaRepository<Mission, Long> {
      * @return 만료된 미션 목록
      */
     List<Mission> findAllByTypeAndIsCompletedFalseAndIssuedAtBefore(String type, java.time.LocalDateTime time);
+
+    /**
+     * 특정 기기의 지정된 시간 이후에 발급된 미션 목록을 조회합니다.
+     *
+     * @param deviceId 기기 ID
+     * @param time 지정 시간
+     * @return 미션 목록
+     */
+    List<Mission> findAllByDeviceDeviceIdAndIssuedAtAfter(String deviceId, java.time.LocalDateTime time);
+
+    /**
+     * 특정 기기에 특정 타입의 미션이 지정된 시간 이후에 발행되었는지 여부를 확인합니다.
+     * (동시성 다중 호출 시 중복 생성 방지를 위해 사용됩니다.)
+     *
+     * @param deviceId 기기 ID
+     * @param type 미션 타입
+     * @param time 기준 시간 (오늘 자정 등)
+     * @return 발행 여부
+     */
+    boolean existsByDeviceDeviceIdAndTypeAndIssuedAtAfter(String deviceId, String type, java.time.LocalDateTime time);
+
     /**
      * 특정 사용자의 모든 미션 목록을 조회합니다.
      * (누적 평균 점수 산출을 위해 사용됩니다.)

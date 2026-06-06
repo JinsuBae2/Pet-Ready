@@ -1,5 +1,6 @@
 package com.petready.backend.domain.mission.api;
 
+import com.petready.backend.domain.mission.dto.MissionResponse;
 import com.petready.backend.domain.mission.service.MissionService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -7,14 +8,19 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.List;
+
 /**
  * 모바일 클라이언트 앱에서 발생하는 개별 일반 미션(산책, 밥주기 외 기타 돌봄활동)의 
- * 완료 처리 트랜잭션을 담당하는 컨트롤러 클래스입니다.
+ * 완료 처리 트랜잭션 및 조회를 담당하는 컨트롤러 클래스입니다.
  */
 @Tag(name = "Mission", description = "미션 상태 및 완료 관리 API")
 @RestController
@@ -23,6 +29,27 @@ import org.springframework.web.bind.annotation.RestController;
 public class MissionController {
 
     private final MissionService missionService;
+
+    /**
+     * 사용자가 스마트폰 앱 화면에 진입했을 때 오늘자 미션 목록을 조회하여 반환합니다.
+     */
+    @Operation(
+        summary = "오늘의 미션 목록 조회 API", 
+        description = "현재 로그인된 사용자의 기기에 할당된 오늘(자정 이후)의 미션 목록을 조회하여 각각의 미션 식별자, 종류, 발급 시각, 완료 여부를 반환합니다. 오늘 발급된 필수 일일 미션 3종(산책, 밥주기, 놀아주기)이 없을 시 최초 호출 시점에 백엔드에서 자동 생성 후 리스트를 리턴합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "오늘의 미션 목록 조회 성공"),
+        @ApiResponse(responseCode = "404", description = "현재 로그인된 유저가 등록한 기기가 존재하지 않음"),
+        @ApiResponse(responseCode = "401", description = "유효한 JWT 인증 정보가 누락된 경우")
+    })
+    @GetMapping("/today")
+    public ResponseEntity<List<MissionResponse>> getTodayMissions(
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        // 인증된 사용자 이메일로 매핑된 기기의 오늘의 미션 목록을 가져옵니다.
+        List<MissionResponse> response = missionService.getTodayMissions(userDetails.getUsername());
+        return ResponseEntity.ok(response);
+    }
 
     /**
      * 사용자가 스마트폰 앱 화면에서 개별 미션의 '완료' 버튼을 눌렀을 때 호출되어 상태를 갱신합니다.
