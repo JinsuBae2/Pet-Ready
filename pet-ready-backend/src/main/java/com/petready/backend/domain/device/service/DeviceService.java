@@ -4,15 +4,22 @@ import com.petready.backend.domain.device.dto.DeviceRegisterRequest;
 import com.petready.backend.domain.device.dto.MyDeviceResponse;
 import com.petready.backend.domain.device.entity.Device;
 import com.petready.backend.domain.device.repository.DeviceRepository;
+import com.petready.backend.domain.report.entity.PetReport;
+import com.petready.backend.domain.report.repository.PetReportRepository;
 import com.petready.backend.domain.score.entity.RealTimeScore;
 import com.petready.backend.domain.score.repository.RealTimeScoreRepository;
 import com.petready.backend.domain.user.entity.User;
 import com.petready.backend.domain.user.repository.UserRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.math.BigDecimal;
 
 /**
  * 기기 등록 및 관리를 담당하는 서비스 클래스입니다.
@@ -25,6 +32,8 @@ public class DeviceService {
     private final DeviceRepository deviceRepository;
     private final UserRepository userRepository;
     private final RealTimeScoreRepository scoreRepository;
+    private final PetReportRepository reportRepository;
+    private final ObjectMapper objectMapper;
 
     /**
      * 사용자와 기기를 연결(등록)하고 초기 점수를 세팅합니다.
@@ -79,6 +88,45 @@ public class DeviceService {
                 .lastUpdatedAt(java.time.LocalDateTime.now())
                 .build();
         scoreRepository.save(initialScore);
+
+        // [고도화] 기기 등록(입양) 시 초기 비용(입양비 100,000원 + 종합백신 25,992원 + 광견병 24,428원 = 총 150,420원) 산정 적재
+        List<Map<String, Object>> initialReceiptItems = new ArrayList<>();
+        
+        Map<String, Object> adoptionFee = new HashMap<>();
+        adoptionFee.put("item", "가상 유기견 입양비");
+        adoptionFee.put("amount", 100000L);
+        adoptionFee.put("reason", "최초 기기 등록 시 입양비");
+        initialReceiptItems.add(adoptionFee);
+
+        Map<String, Object> vaccine1 = new HashMap<>();
+        vaccine1.put("item", "개 종합백신");
+        vaccine1.put("amount", 25992L);
+        vaccine1.put("reason", "기초 필수 접종비");
+        initialReceiptItems.add(vaccine1);
+
+        Map<String, Object> vaccine2 = new HashMap<>();
+        vaccine2.put("item", "광견병 백신");
+        vaccine2.put("amount", 24428L);
+        vaccine2.put("reason", "기초 필수 접종비");
+        initialReceiptItems.add(vaccine2);
+
+        String initialReceiptJson = "[]";
+        try {
+            initialReceiptJson = objectMapper.writeValueAsString(initialReceiptItems);
+        } catch (Exception e) {
+            // JSON 변환 예외 발생 시 에러 로깅
+        }
+
+        PetReport initialReport = PetReport.builder()
+                .user(user)
+                .totalScore(BigDecimal.valueOf(100))
+                .grade("A+")
+                .totalReceiptAmount(150420L)
+                .receiptDetailsJson(initialReceiptJson)
+                .totalWalkCount(0)
+                .totalMissionCount(0)
+                .build();
+        reportRepository.save(initialReport);
     }
 
     /**
@@ -91,6 +139,21 @@ public class DeviceService {
         device.updatePetName(petName);
         deviceRepository.save(device);
      }
+
+    /**
+     * 특정 사용자 이메일로 등록된 기기 정보를 조회하여 반환합니다.
+     *
+     * @param email 사용자 이메일
+     * @return 등록된 기기 정보 응답 DTO
+     */
+    public MyDeviceResponse getMyDevice(String email) {
+        // 유저 이메일로 매핑된 기기를 조회합니다. 기기가 없을 시 EntityNotFoundException(404)을 던집니다.
+        Device device = deviceRepository.findByUserEmail(email)
+                .orElseThrow(() -> new jakarta.persistence.EntityNotFoundException("등록된 기기가 존재하지 않습니다."));
+        
+        // 기기 엔티티를 MyDeviceResponse DTO로 변환하여 반환합니다.
+        return MyDeviceResponse.from(device);
+    }
 
     /**
      * 특정 사용자 이메일로 등록된 기기 정보를 조회하여 반환합니다.

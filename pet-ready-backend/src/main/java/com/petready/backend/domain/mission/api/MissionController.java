@@ -35,7 +35,7 @@ public class MissionController {
      */
     @Operation(
         summary = "오늘의 미션 목록 조회 API", 
-        description = "현재 로그인된 사용자의 기기에 할당된 오늘(자정 이후)의 미션 목록을 조회하여 각각의 미션 식별자, 종류, 발급 시각, 완료 여부를 반환합니다."
+        description = "현재 로그인된 사용자의 기기에 할당된 오늘(자정 이후)의 미션 목록을 조회하여 각각의 미션 식별자, 종류, 발급 시각, 완료 여부를 반환합니다. 오늘 발급된 필수 일일 미션 3종(산책, 밥주기, 놀아주기)이 없을 시 최초 호출 시점에 백엔드에서 자동 생성 후 리스트를 리턴합니다."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "오늘의 미션 목록 조회 성공"),
