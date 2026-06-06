@@ -16,6 +16,8 @@ import com.petready.backend.domain.score.repository.RealTimeScoreRepository;
 import com.petready.backend.domain.walk.entity.Walk;
 import com.petready.backend.domain.walk.repository.WalkRepository;
 import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,9 +35,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * 최종 양육 리포트 관련 API 엔드포인트를 제공하는 컨트롤러입니다.
+ * 시뮬레이션 최종 종료 후 사용자의 양육 성적, AI 행동 유형 분류 및 맞춤 유기견 구조 정보 매칭을 일괄 제공하는 컨트롤러입니다.
  */
-@Tag(name = "Report", description = "최종 양육 리포트 및 매칭 추천 API")
+@Tag(name = "Report", description = "최종 양육 리포트 및 유기동물 매칭 추천 API")
 @Slf4j
 @RestController
 @RequestMapping("/api/v1/report")
@@ -51,21 +53,26 @@ public class ReportController {
     private final RescueAnimalCacheRepository rescueAnimalCacheRepository;
 
     /**
-     * 사용자의 최종 양육 시뮬레이션 리포트 결과 및 매칭되는 실제 구조동물 목록을 반환합니다.
-     *
-     * @param userDetails 인증된 사용자 정보
-     * @return 최종 양육 리포트 응답 DTO
+     * 사용자의 최종 양육 리포트와 개인별 맞춤 유기견 리스트를 융합하여 가져옵니다.
      */
-    @Operation(summary = "최종 양육 리포트 조회", description = "사용자의 성적표 지표, AI 분석 유형 결과, 그리고 매칭되는 실제 유기견 데이터를 동적으로 융합하여 반환합니다.")
+    @Operation(
+        summary = "최종 양육 성적 리포트 및 추천견 조회 API", 
+        description = "사용자의 전체 시뮬레이션 지표를 기반으로 AI 분석(Weka ML)을 실행하여 성향 유형을 재판별합니다. 그 후 실시간 최종 점수와 등급(A+ ~ F)을 정산하고, AI가 추천한 반려견 품종 키워드와 DB 유기견 캐시를 매칭시켜 최적의 구조견 최대 5건을 취합해 최종 리포트 패키지로 반환합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "최종 리포트 DTO 생성 및 매칭 유기견 리스트 융합 반환 완료"),
+        @ApiResponse(responseCode = "400", description = "유저 계정에 연결된 로봇 기기가 없어 보고서 생성이 불가능한 경우"),
+        @ApiResponse(responseCode = "401", description = "인증 토큰 누락 또는 유효 만료 상태")
+    })
     @GetMapping("/final")
     public ResponseEntity<FinalReportResponse> getFinalReport(@AuthenticationPrincipal UserDetails userDetails) {
         String email = userDetails.getUsername();
-        log.info("[리포트 컨트롤러] 최종 리포트 조회 요청 - User: {}", email);
+        log.info("[최종 리포트 API 호출] 사용자 이메일: {}", email);
 
-        // 1. 최신 시뮬레이션 지표 기준 AI 분석 수행 및 결과 갱신
+        // 1. 최신 시뮬레이션 통계를 기준으로 Weka AI 분석을 재수행하여 유형 및 추천 품종을 갱신합니다. (BK-13)
         UserAnalysisResult analysisResult = analysisService.performAnalysis(email);
 
-        // 2. 기기 및 실시간 점수 조회
+        // 2. 기기 및 실시간 점수를 조회합니다.
         Device device = deviceRepository.findByUserEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저에게 등록된 기기가 없습니다."));
         
@@ -77,24 +84,24 @@ public class ReportController {
         
         int finalScore = realTimeScore.getCurrentScore();
 
-        // 3. 누적 지표 조회 및 산출
+        // 3. 누적 산책 및 미션 데이터를 활용해 세부 성적표 지표들을 빌드합니다.
         List<Walk> walks = walkRepository.findAllByUserEmail(email);
         List<Mission> missions = missionRepository.findAllByDeviceUserEmail(email);
         
-        // 산책 점수 (실제/목표 비율 백분율화)
+        // 산책 점수 정산: 실제 총 거리와 설정 목표 거리의 백분율 비율로 변환 (최대 100점 클램핑)
         double totalActualWalk = walks.stream().mapToDouble(w -> w.getDistanceKm().doubleValue()).sum();
         double totalGoalWalk = walks.stream().mapToDouble(w -> w.getWalkGoalKm().doubleValue()).sum();
         int walkScore = totalGoalWalk == 0 ? 0 : Math.min(100, (int) ((totalActualWalk / totalGoalWalk) * 100));
 
-        // 알림 반응 점수 (미션 성공률 백분율화)
+        // 미션 반응 점수 정산: 전체 발급된 알림 대비 해결 완료한 미션의 백분율 비율로 변환
         long totalMissions = missions.size();
         long completedMissions = missions.stream().filter(Mission::getIsCompleted).count();
         int responseScore = totalMissions == 0 ? 100 : (int) (((double) completedMissions / totalMissions) * 100);
 
-        // 건강 벌점 (방전 벌점 N_sick * 15)
+        // 건강 벌점 정산: 배터리 방전(아픔 횟수) 당 15점씩 패널티를 계산
         int healthPenalty = device.getSickCount() * 15;
 
-        // 평균 응답 시간
+        // 평균 응답 시간 정산: 미션 완료 데이터의 초 단위 응답 속도 평균값 도출
         long respondedCount = missions.stream()
                 .filter(m -> m.getIsCompleted() && m.getResponseTimeSec() != null)
                 .count();
@@ -107,19 +114,19 @@ public class ReportController {
             avgResponseSec = (int) (sumResponseSec / respondedCount);
         }
 
-        // 총 가상 영수증 누적액
+        // 총 가상 누적 영수증 금액을 가져옵니다.
         int totalMedicalFee = reportRepository.findByUserEmail(email)
                 .map(PetReport::getTotalReceiptAmount)
                 .orElse(0L)
                 .intValue();
 
-        // 등급 산출
+        // 실시간 점수 일원화 등급 판정 수행 (A+ ~ F) (BK-08)
         String grade = determineGrade(finalScore);
 
-        // 4. 구조동물 추천 목록 매칭 (rescue_animals_cache 조회 및 필터링)
+        // 4. 추천 품종에 잘 부합하는 실물 유기견 리스트 최대 5건을 캐시 테이블에서 매칭 및 추출합니다. (BK-10/BK-12)
         List<FinalReportResponse.RecommendedAnimalDto> recommendedAnimals = matchRescueAnimals(analysisResult);
 
-        // 5. 최종 응답 조립
+        // 5. 응답 JSON 조립 및 반환 처리를 수행합니다.
         FinalReportResponse.BreedRecommendation breedRecDto = FinalReportResponse.BreedRecommendation.builder()
                 .type(analysisResult.getBreedType())
                 .examples(analysisResult.getBreedExamples())
@@ -145,6 +152,9 @@ public class ReportController {
         return ResponseEntity.ok(response);
     }
 
+    /**
+     * 점수를 기반으로 실시간 감점 학점 등급을 판정합니다. (BK-08)
+     */
     private String determineGrade(int score) {
         if (score >= 90) return "A+";
         if (score >= 80) return "A";
@@ -155,24 +165,24 @@ public class ReportController {
     }
 
     /**
-     * 추천된 대표 품종을 기반으로 DB 캐시 테이블에서 매칭되는 구조동물 최대 5마리를 검색합니다.
+     * AI의 성향 추천 품종 키워드를 활용해 유기견 DB 캐시 테이블에서 매칭 조건에 근접하고 최근 구조된 동물 최대 5마리를 조회합니다. (BK-10)
      */
     private List<FinalReportResponse.RecommendedAnimalDto> matchRescueAnimals(UserAnalysisResult analysisResult) {
         String examples = analysisResult.getBreedExamples();
         List<RescueAnimalCache> allCached = rescueAnimalCacheRepository.findAll();
 
+        // 추천견 예시 목록이 없는 유형(예: NOT_READY)일 경우 빈 리스트를 조기 리턴합니다.
         if (examples == null || "없음".equals(examples) || examples.trim().isEmpty()) {
-            // 추천 동물이 없는 유형(NOT_READY 등)인 경우 빈 배열 리턴
             return List.of();
         }
 
-        // 쉼표 기준 추천 품종 키워드 리스트 추출 (예: [골든리트리버, 라브라도리트리버, 보더콜리])
+        // 콤마(,) 단위로 추천 품종 리스트를 분리하고 다듬어 키워드 컬렉션을 수집합니다.
         List<String> keywords = Arrays.stream(examples.split(","))
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
                 .collect(Collectors.toList());
 
-        // 캐시 테이블 전체를 탐색하며 품종 매칭 필터 및 구조일자 역순(최근 순) 정렬
+        // 캐시 테이블 내역에서 키워드 포함 조건 필터링 및 구조 날짜 최신 순(내림차순) 정렬 후 5마리로 제한합니다.
         List<RescueAnimalCache> matched = allCached.stream()
                 .filter(animal -> keywords.stream().anyMatch(kw -> 
                         animal.getBreed() != null && (animal.getBreed().contains(kw) || kw.contains(animal.getBreed()))))
@@ -180,8 +190,8 @@ public class ReportController {
                 .limit(5)
                 .collect(Collectors.toList());
 
-        // 만약 매칭되는 특정 품종 구조 데이터가 캐시에 전혀 없을 경우, 
-        // 무조건 빈 리스트를 주기보단 최신 구조된 동물 5마리를 대체 제공하는 견고함(Robust) 발휘
+        // [방어 코드] 만약 해당 추천견 품종 데이터가 전혀 조회되지 않는다면, 
+        // 화면 노출 누락 방지를 위해 최신 구조된 동물 5마리를 기본 노출하도록 Fallback 적용합니다.
         if (matched.isEmpty() && !allCached.isEmpty()) {
             matched = allCached.stream()
                     .sorted(Comparator.comparing(RescueAnimalCache::getRescueDate).reversed())
