@@ -13,10 +13,10 @@ import java.util.List;
 public interface CommandRepository extends JpaRepository<Command, Long> {
     
     /**
-     * 특정 기기에 전달된 최근 명령 목록을 조회합니다.
+     * 특정 기기에 전달된 최근 명령 목록을 조회합니다 (오래된 순 - FIFO 큐 구조).
      * 
      * @param deviceId 기기 ID
-     * @return 명령 이력 목록
+     * @return 명령 이력 목록 (생성일 오름차순)
      */
-    List<Command> findAllByDeviceDeviceIdOrderByCreatedAtDesc(String deviceId);
+    List<Command> findAllByDeviceDeviceIdOrderByCreatedAtAsc(String deviceId);
 }

@@ -11,6 +11,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
 /**
  * 기기 등록 및 관리를 담당하는 서비스 클래스입니다.
  */
@@ -39,27 +41,53 @@ public class DeviceService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("사용자를 찾을 수 없습니다."));
 
-        // 목표 거리 보정 (최소 0.1km)
-        Double walkGoal = request.getWalkGoalKm();
-        if (walkGoal == null || walkGoal < 0.1) {
-            walkGoal = 0.1;
+        // 기존에 이 유저가 등록했던 기기가 있다면 삭제하여 1:1 관계 유지
+        List<Device> oldDevices = deviceRepository.findAllByUserId(user.getId());
+        for (Device oldDevice : oldDevices) {
+            String oldDeviceId = oldDevice.getDeviceId();
+            deviceRepository.deleteScoreEventsByDeviceId(oldDeviceId);
+            deviceRepository.deleteCommandsByDeviceId(oldDeviceId);
+            deviceRepository.deleteMissionsByDeviceId(oldDeviceId);
+            deviceRepository.deleteWalksByDeviceId(oldDeviceId);
+            deviceRepository.deletePetStatusLogsByDeviceId(oldDeviceId);
+            deviceRepository.deleteRealTimeScoreByDeviceId(oldDeviceId);
+            deviceRepository.delete(oldDevice);
         }
+        deviceRepository.flush();
+
+        // 반려견 이름은 최초 등록 시 "반려견"으로 자동 설정
+        String petName = "반려견";
+
+        // 하루 산책 목표 거리는 시뮬레이터 평균 기준인 2.0km로 자동 설정
+        Double walkGoal = 2.0;
 
         Device device = Device.builder()
                 .deviceId(request.getDeviceId())
                 .user(user)
-                .petName(request.getPetName())
+                .petName(petName)
                 .walkGoalKm(walkGoal)
                 .isOnline(false)
                 .build();
 
-        deviceRepository.save(device);
+        Device savedDevice = deviceRepository.save(device);
 
         // BK-02 기기 등록 완료 시 해당 기기의 실시간 현재 점수를 100점으로 최초 초기화
         RealTimeScore initialScore = RealTimeScore.builder()
-                .device(device)
+                .device(savedDevice)
                 .currentScore(100)
+                .lastUpdatedAt(java.time.LocalDateTime.now())
                 .build();
         scoreRepository.save(initialScore);
+    }
+
+    /**
+     * 사용자의 기기에 등록된 반려견의 닉네임을 변경합니다.
+     */
+    @Transactional
+    public void updatePetName(String petName, String email) {
+        Device device = deviceRepository.findByUserEmail(email)
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저에게 등록된 기기가 없습니다."));
+        device.updatePetName(petName);
+        deviceRepository.save(device);
     }
 }

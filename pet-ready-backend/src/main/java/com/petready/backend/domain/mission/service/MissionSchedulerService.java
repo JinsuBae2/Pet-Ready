@@ -38,7 +38,7 @@ public class MissionSchedulerService {
     /**
      * 매일 자정(00:00)에 실행되어 당일의 '새벽 짖음' 미션 시각을 계산하고 스케줄링합니다.
      */
-    @Scheduled(cron = "0 0 0 * * *")
+    // @Scheduled(cron = "0 0 0 * * *") // v2.2 하드웨어 주도형 짖음 이벤트 도입으로 비활성화
     public void scheduleDailyMissions() {
         log.info("일일 새벽 짖음 미션 스케줄링이 시작되었습니다.");
         

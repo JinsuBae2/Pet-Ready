@@ -31,22 +31,6 @@ public class PublicStatsDataInitializer {
      */
     @PostConstruct
     public void initializePublicStats() {
-        log.info("========== [공공데이터 정적 초기화 시작] ==========");
-
-        for (String filePath : STATIC_JSON_FILES) {
-            try {
-                ClassPathResource resource = new ClassPathResource(filePath);
-                if (resource.exists()) {
-                    // TODO: 파일 파싱 및 데이터 적재 로직 (각 도메인별 Repository 연동 등) 구현 위치
-                    log.info("[정적 데이터 로드 완료] 파일명: {}", filePath);
-                } else {
-                    log.warn("[정적 데이터 누락] 파일이 존재하지 않습니다: {}", filePath);
-                }
-            } catch (Exception e) {
-                log.error("[정적 데이터 로드 에러] 파일 읽기 실패: {} - 원인: {}", filePath, e.getMessage());
-            }
-        }
-
-        log.info("========== [공공데이터 정적 초기화 종료] ==========");
+        log.info("========== [공공데이터 정적 초기화] v2.2 고도화로 인한 ANR-08 지도 화면 삭제로 정적 파일 로딩 생략 ==========");
     }
 }

@@ -37,6 +37,17 @@ public class Device extends BaseEntity {
     }
 
     /**
+     * 반려견의 이름(닉네임)을 업데이트합니다.
+     * @param petName 새로운 반려견 이름
+     */
+    public void updatePetName(String petName) {
+        if (petName == null || petName.trim().isEmpty()) {
+            throw new IllegalArgumentException("반려견 이름은 필수입니다.");
+        }
+        this.petName = petName;
+    }
+
+    /**
      * 기기의 고유 식별자 (예: DOG_01)
      */
     @Id
@@ -91,10 +102,37 @@ public class Device extends BaseEntity {
     private LocalDateTime lastDischargePenaltyAt;
 
     /**
+     * 가상 피딩 편법 차단용: 앱 피딩 터치 활성화 여부
+     */
+    @Builder.Default
+    @Column(name = "app_feed_clicked", nullable = false)
+    private Boolean appFeedClicked = false;
+
+    /**
+     * 가상 피딩 편법 차단용: 실물 밥그릇 비전 인식 여부
+     */
+    @Builder.Default
+    @Column(name = "bowl_detected", nullable = false)
+    private Boolean bowlDetected = false;
+
+    /**
      * 굶김 횟수를 1 증가시킵니다.
      */
     public void incrementSickCount() {
         this.sickCount += 1;
         this.lastDischargePenaltyAt = LocalDateTime.now();
+    }
+
+    public void updateAppFeedClicked(boolean clicked) {
+        this.appFeedClicked = clicked;
+    }
+
+    public void updateBowlDetected(boolean detected) {
+        this.bowlDetected = detected;
+    }
+
+    public void resetFeedingLock() {
+        this.appFeedClicked = false;
+        this.bowlDetected = false;
     }
 }

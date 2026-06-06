@@ -39,27 +39,28 @@ public class PetStatusLog extends BaseEntity {
 
     /**
      * 기기의 배터리 잔량 (단위: %)
+     * 서버 사이드 가상 배터리 감쇄 시뮬레이션용으로 유지합니다.
      */
     @Column(name = "battery_level")
     private Integer batteryLevel;
 
     /**
-     * 현재 기기 충전 여부
+     * 머리 터치 센서 활성화 여부
      */
-    @Column(name = "is_charging")
-    private Boolean isCharging;
+    @Column(name = "head_touch")
+    private Boolean headTouch;
 
     /**
-     * 사용자나 반려견의 물리적 확인(터치) 발생 여부
+     * 등 터치 센서 1 활성화 여부
      */
-    @Column(name = "touch_active")
-    private Boolean touchActive;
+    @Column(name = "back_touch1")
+    private Boolean backTouch1;
 
     /**
-     * 장착된 센서의 압력 측정값
+     * 등 터치 센서 2 활성화 여부
      */
-    @Column(name = "pressure_value")
-    private Double pressureValue;
+    @Column(name = "back_touch2")
+    private Boolean backTouch2;
 
     /**
      * 데이터가 기록된 시각 (인덱스용 별도 필드)

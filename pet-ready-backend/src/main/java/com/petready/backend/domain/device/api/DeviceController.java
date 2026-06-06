@@ -14,6 +14,9 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.petready.backend.domain.device.dto.UpdatePetNameRequest;
+import org.springframework.web.bind.annotation.PatchMapping;
+
 /**
  * 기기 관리 관련 API를 제공하는 컨트롤러입니다.
  */
@@ -32,6 +35,16 @@ public class DeviceController {
             @AuthenticationPrincipal UserDetails userDetails) {
         
         deviceService.registerDevice(request, userDetails.getUsername());
+        return ResponseEntity.ok().build();
+    }
+
+    @Operation(summary = "반려견 이름(닉네임) 변경", description = "등록된 기기의 반려견 이름(닉네임)을 수정합니다.")
+    @PatchMapping("/pet-name")
+    public ResponseEntity<Void> updatePetName(
+            @Valid @RequestBody UpdatePetNameRequest request,
+            @AuthenticationPrincipal UserDetails userDetails) {
+        
+        deviceService.updatePetName(request.getPetName(), userDetails.getUsername());
         return ResponseEntity.ok().build();
     }
 }

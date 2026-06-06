@@ -26,4 +26,7 @@ public class PetStatusResponse {
 
     @Schema(description = "분석 메시지", example = "배터리가 부족하여 반려견이 배고플 수 있습니다.")
     private String analysisMessage;
+
+    @Schema(description = "상태 확인 LED 색상 (GREEN, RED)", example = "GREEN")
+    private String ledColor;
 }

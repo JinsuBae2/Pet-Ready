@@ -35,9 +35,10 @@ public class PetCommunicationService {
     private final FcmNotificationService fcmNotificationService;
     private final com.petready.backend.domain.score.service.ScoreService scoreService;
     private final com.petready.backend.domain.mission.repository.MissionRepository missionRepository;
+    private final com.petready.backend.domain.score.repository.ScoreEventRepository scoreEventRepository;
 
     /**
-     * 기기로부 상태 로그를 수신하여 저장하고, 기기의 실시간 상태를 업데이트합니다.
+     * 기기(ESP32)로부터 상태 로그를 수신하여 저장하고, 기기의 실시간 상태를 업데이트합니다.
      * 수신된 데이터를 바탕으로 반려견의 상태를 분석합니다.
      * 
      * @param request 상태 수신 데이터
@@ -49,25 +50,34 @@ public class PetCommunicationService {
         Device device = deviceRepository.findById(request.getDeviceId())
                 .orElseThrow(() -> new EntityNotFoundException("등록되지 않은 기기입니다: " + request.getDeviceId()));
 
+        // 가상 배터리 감쇄 시뮬레이션 계산
+        int battery = 100;
+        java.util.Optional<PetStatusLog> lastLogOpt = logRepository.findFirstByDeviceDeviceIdOrderByRecordedAtDesc(device.getDeviceId());
+        if (lastLogOpt.isPresent()) {
+            PetStatusLog lastLog = lastLogOpt.get();
+            int lastBattery = lastLog.getBatteryLevel() != null ? lastLog.getBatteryLevel() : 100;
+            long minutesDiff = java.time.Duration.between(lastLog.getRecordedAt(), LocalDateTime.now()).toMinutes();
+            // 분당 0.1% 차감 (10분당 1% 차감)
+            double depletion = minutesDiff * 0.1;
+            battery = Math.max(0, (int) (lastBattery - depletion));
+        }
+
         // 2. 로그 저장
         PetStatusLog statusLog = PetStatusLog.builder()
                 .device(device)
-                .batteryLevel(request.getBatteryLevel())
-                .isCharging(request.getIsCharging())
-                .touchActive(request.getTouchActive())
-                .pressureValue(request.getPressureValue())
+                .batteryLevel(battery)
+                .headTouch(request.getHeadTouch())
+                .backTouch1(request.getBackTouch1())
+                .backTouch2(request.getBackTouch2())
                 .recordedAt(LocalDateTime.now())
                 .build();
         logRepository.save(statusLog);
 
         // 3. 기기 실시간 상태 업데이트 (Heartbeat)
-        // Device의 필드를 업데이트하기 위해 수동으로 업데이트 (Entity가 Immutable하지 않은 경우)
-        // 여기서는 간단히 리포지토리를 통해 업데이트 로직을 태우거나, 필드 접근용 메서드 필요
-        // (참고: 현 엔티티 설계상 Setter가 없으므로 Reflection이나 별도 메서드 필요)
         updateDeviceHeartbeat(device);
 
         // 4. 상태 분석 로직 (배터리 알림 등 포함)
-        return analyzePetStatus(request, device);
+        return analyzePetStatus(request, device, statusLog);
     }
 
     /**
@@ -77,8 +87,8 @@ public class PetCommunicationService {
      * @return 명령 정보 (명령이 없으면 hasCommand = false)
      */
     public CommandResponse getPendingCommand(String deviceId) {
-        // 해당 기기의 acked_at이 null인 가장 최신 명령 1건 조회
-        List<Command> pendingCommands = commandRepository.findAllByDeviceDeviceIdOrderByCreatedAtDesc(deviceId);
+        // 해당 기기의 acked_at이 null인 가장 오래된 미수신 명령 1건 조회 (FIFO)
+        List<Command> pendingCommands = commandRepository.findAllByDeviceDeviceIdOrderByCreatedAtAsc(deviceId);
         
         return pendingCommands.stream()
                 .filter(c -> c.getAckedAt() == null)
@@ -106,9 +116,6 @@ public class PetCommunicationService {
         Command command = commandRepository.findById(commandId)
                 .orElseThrow(() -> new EntityNotFoundException("존재하지 않는 명령입니다: " + commandId));
         
-        // acked_at 업데이트 (현재 엔티티 구조상 리플렉션이나 메서드 필요)
-        // 실무에서는 @Setter나 update용 메서드를 엔티티에 추가함
-        // 여기서는 개념적 구현을 위해 로직 기술
         updateCommandAck(command);
     }
 
@@ -123,20 +130,20 @@ public class PetCommunicationService {
     }
 
     /**
-     * 배터리, 터치, 압력 센서 데이터를 기반으로 반려견의 상태를 분석하는 로직입니다.
+     * 3종 터치 센서 데이터를 기반으로 반려견의 상태를 분석하는 로직입니다.
      */
-    private PetStatusResponse analyzePetStatus(PetStatusRequest request, Device device) {
-        boolean isHungry = request.getBatteryLevel() != null && request.getBatteryLevel() <= 20;
+    private PetStatusResponse analyzePetStatus(PetStatusRequest request, Device device, PetStatusLog statusLog) {
+        int virtualBattery = statusLog.getBatteryLevel() != null ? statusLog.getBatteryLevel() : 100;
+        boolean isHungry = virtualBattery <= 20;
         String mood = "NORMAL";
         String healthStatus = "GOOD";
         String message = "반려견이 안정적인 상태입니다.";
 
-        // BK-05: 짖음 달래기 정산 (터치 센서 연동)
-        if (Boolean.TRUE.equals(request.getTouchActive())) {
+        // 1. 머리 터치 센서 -> 짖음 달래기 정산
+        if (Boolean.TRUE.equals(request.getHeadTouch())) {
             mood = "HAPPY";
-            message = "반려견이 주인의 터치를 느껴 기분이 좋습니다!";
+            message = "반려견이 머리를 쓰다듬자 기분이 좋아졌습니다!";
             
-            // 활성화된 BARKING 미션이 있는지 확인하고 점수 정산
             java.util.Optional<com.petready.backend.domain.mission.entity.Mission> activeBarkingOpt = 
                     missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
                             device.getDeviceId(), NotificationType.BARKING.name());
@@ -153,26 +160,45 @@ public class PetCommunicationService {
                 } else if (responseTimeSec <= 1800) {
                     delta = -3;
                 } else {
-                    delta = -10; // 30분 초과 시점엔 스케줄러가 잡기 전일 수도 있으므로 여기서도 예외 처리
+                    delta = -10;
                 }
                 
                 mission.complete(LocalDateTime.now(), responseTimeSec);
                 missionRepository.save(mission);
                 
                 scoreService.processScoreEvent(device.getDeviceId(), "BARK_RESPOND", delta, "짖음 미션 응답 완료 (" + responseTimeSec + "초)");
-                log.info("기기 [{}] 짖음 미션 수동 완료: 응답 시간 {}초, 점수 변화 {}", device.getDeviceId(), responseTimeSec, delta);
+                
+                // 스피커 짖음 소리를 끄기 위해 SOUND_STOP 명령 큐 추가
+                Command stopCommand = Command.builder()
+                        .device(device)
+                        .command("SOUND_STOP")
+                        .durationSec(0)
+                        .build();
+                commandRepository.save(stopCommand);
+                
+                log.info("기기 [{}] 짖음 미션 완료: SOUND_STOP 명령 추가", device.getDeviceId());
             }
-        } else if (request.getPressureValue() != null && request.getPressureValue() > 50.0) {
-            mood = "STRESSED";
-            healthStatus = "WARNING";
-            message = "강한 압력이 감지되었습니다. 반려견의 상태를 확인해주세요.";
+        }
+        
+        // 2. 등 터치 센서 -> 쓰다듬기 교감 점수 부여
+        if (Boolean.TRUE.equals(request.getBackTouch1()) || Boolean.TRUE.equals(request.getBackTouch2())) {
+            mood = "HAPPY";
+            message = "반려견이 등을 쓰다듬어 주자 아주 기뻐합니다!";
+            
+            // 오늘 부여된 교감 보너스 횟수가 5회 미만인 경우에만 획득
+            java.time.LocalDateTime startOfToday = java.time.LocalDate.now().atStartOfDay();
+            long count = scoreEventRepository.countByDeviceDeviceIdAndEventTypeAndOccurredAtAfter(
+                    device.getDeviceId(), "PET_BONDING", startOfToday);
+            if (count < 5) {
+                scoreService.processScoreEvent(device.getDeviceId(), "PET_BONDING", 1, "반려견 쓰다듬기 및 교감 보너스 (+1점)");
+                log.info("기기 [{}] 교감 점수 획득 (+1점). 오늘 횟수: {}/5", device.getDeviceId(), count + 1);
+            }
         }
 
-        // BK-03: 배고픔 및 밥 주기 미션 처리
+        // 3. 배고픔 미션 발동 (가상 배터리 감쇄에 따른 발동)
         if (isHungry) {
             message = "배터리가 부족하여 반려견의 배고픔 수치가 올라갔습니다.";
             
-            // 활성화된 FEEDING 미션이 없다면 새로 생성하고 알림 발송
             java.util.Optional<com.petready.backend.domain.mission.entity.Mission> activeFeedingOpt = 
                     missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
                             device.getDeviceId(), NotificationType.FEEDING.name());
@@ -186,6 +212,14 @@ public class PetCommunicationService {
                         .build();
                 missionRepository.save(feedingMission);
 
+                // 스피커 앓는 소리 WHINE_START 명령 추가
+                Command whineCommand = Command.builder()
+                        .device(device)
+                        .command("WHINE_START")
+                        .durationSec(30)
+                        .build();
+                commandRepository.save(whineCommand);
+
                 if (device.getUser() != null && device.getUser().getFcmToken() != null) {
                     String petName = device.getPetName() != null ? device.getPetName() : "반려견";
                     fcmNotificationService.sendNotification(
@@ -198,11 +232,68 @@ public class PetCommunicationService {
             }
         }
 
-        // 충전 패드에 올려 충전 시작 시 (밥 주기 완료 인식)
-        if (Boolean.TRUE.equals(request.getIsCharging())) {
+        // 4. LED 상태 결정
+        boolean hasActiveMission = missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
+                device.getDeviceId(), NotificationType.BARKING.name()).isPresent()
+                || missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
+                device.getDeviceId(), NotificationType.FEEDING.name()).isPresent();
+        
+        String ledColor = (hasActiveMission || isHungry) ? "RED" : "GREEN";
+
+        return PetStatusResponse.builder()
+                .isHungry(isHungry)
+                .mood(mood)
+                .healthStatus(healthStatus)
+                .analysisMessage(message)
+                .ledColor(ledColor)
+                .build();
+    }
+
+    /**
+     * 사용자가 앱 터치로 밥 주기를 수행했을 때 처리합니다. (크로스 체크 미션 락 연동)
+     */
+    @Transactional
+    public void feedPetByApp(String deviceId) {
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new EntityNotFoundException("등록되지 않은 기기입니다: " + deviceId));
+
+        device.updateAppFeedClicked(true);
+        deviceRepository.save(device);
+        log.info("기기 [{}] - 앱 피딩 터치 활성화 (appFeedClicked=true)", deviceId);
+
+        checkAndProcessFeedingLock(device);
+    }
+
+    /**
+     * 젯슨나노 비전 동기화 수신 시 처리합니다. (크로스 체크 미션 락 연동)
+     */
+    @Transactional
+    public void syncVisionByJetson(String deviceId, boolean bowlDetected) {
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new EntityNotFoundException("등록되지 않은 기기입니다: " + deviceId));
+
+        device.updateBowlDetected(bowlDetected);
+        deviceRepository.save(device);
+        log.info("기기 [{}] - 젯슨나노 비전 동기화 수신 (bowlDetected={})", deviceId, bowlDetected);
+
+        checkAndProcessFeedingLock(device);
+    }
+
+    /**
+     * '앱 터치-실물 밥그릇' 크로스 체크 미션 락 해제 및 피딩 미션 완료를 판별합니다.
+     */
+    @Transactional
+    public void checkAndProcessFeedingLock(Device device) {
+        log.info("기기 [{}] 크로스 체크 판별 - appFeedClicked: {}, bowlDetected: {}",
+                device.getDeviceId(), device.getAppFeedClicked(), device.getBowlDetected());
+
+        // 두 조건이 모두 충족되었을 때만 락 해제 및 밥 주기 완료 처리
+        if (Boolean.TRUE.equals(device.getAppFeedClicked()) && Boolean.TRUE.equals(device.getBowlDetected())) {
+            String deviceId = device.getDeviceId();
+            
             java.util.Optional<com.petready.backend.domain.mission.entity.Mission> activeFeedingOpt = 
                     missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
-                            device.getDeviceId(), NotificationType.FEEDING.name());
+                            deviceId, NotificationType.FEEDING.name());
             
             if (activeFeedingOpt.isPresent()) {
                 com.petready.backend.domain.mission.entity.Mission mission = activeFeedingOpt.get();
@@ -210,23 +301,81 @@ public class PetCommunicationService {
                 
                 // 30분(1800초) 이내에 밥을 주면 +3점 가점
                 if (responseTimeSec <= 1800) {
-                    scoreService.processScoreEvent(device.getDeviceId(), "FEEDING_COMPLETE", 3, "30분 이내 밥주기 미션 성공");
-                    log.info("기기 [{}] 밥주기 미션 성공 (+3점)", device.getDeviceId());
+                    scoreService.processScoreEvent(deviceId, "FEEDING_COMPLETE", 3, "밥그릇 비전 크로스 체크 성공 피딩 미션 성공 (+3점)");
+                    log.info("기기 [{}] 크로스 체크 피딩 미션 성공 (+3점)", deviceId);
                 } else {
-                    // 30분이 넘었다면 점수는 주지 않고 미션만 종료 처리 (방전 전까지 밥을 주긴 함)
-                    log.info("기기 [{}] 밥주기 미션 완료 (30분 초과로 점수 없음)", device.getDeviceId());
+                    log.info("기기 [{}] 크로스 체크 피딩 미션 완료 (30분 초과로 점수 없음)", deviceId);
                 }
                 
                 mission.complete(LocalDateTime.now(), responseTimeSec);
                 missionRepository.save(mission);
             }
-        }
 
-        return PetStatusResponse.builder()
-                .isHungry(isHungry)
-                .mood(mood)
-                .healthStatus(healthStatus)
-                .analysisMessage(message)
-                .build();
+            // 스피커 앓는 소리를 끄기 위해 SOUND_STOP 명령 큐 추가
+            Command stopCommand = Command.builder()
+                    .device(device)
+                    .command("SOUND_STOP")
+                    .durationSec(0)
+                    .build();
+            commandRepository.save(stopCommand);
+
+            // 가상 배터리를 100% 충전 상태로 새 로그 등록 (배터리 시뮬레이션 리셋)
+            PetStatusLog statusLog = PetStatusLog.builder()
+                    .device(device)
+                    .batteryLevel(100)
+                    .headTouch(false)
+                    .backTouch1(false)
+                    .backTouch2(false)
+                    .recordedAt(LocalDateTime.now())
+                    .build();
+            logRepository.save(statusLog);
+
+            // 미션 락 해제 상태 초기화
+            device.resetFeedingLock();
+            deviceRepository.save(device);
+            
+            log.info("기기 [{}] 크로스 체크 락 해제 완료: 가상 배터리 100% 충전 및 SOUND_STOP 명령 발송", deviceId);
+        }
+    }
+
+    /**
+     * 아두이노(ESP32) 짖음 이벤트 수신 시 처리합니다. (하드웨어 주도형 짖음 이벤트)
+     */
+    @Transactional
+    public void receiveBarkEvent(String deviceId) {
+        Device device = deviceRepository.findById(deviceId)
+                .orElseThrow(() -> new EntityNotFoundException("등록되지 않은 기기입니다: " + deviceId));
+
+        log.info("하드웨어 주도형 짖음 이벤트 수신 - 기기 [{}]", deviceId);
+
+        // 중복 미션 생성을 막기 위해 현재 완료되지 않은 짖음 미션이 있는지 먼저 체크
+        java.util.Optional<com.petready.backend.domain.mission.entity.Mission> activeBarkingOpt = 
+                missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
+                        deviceId, NotificationType.BARKING.name());
+
+        if (activeBarkingOpt.isEmpty()) {
+            // 1. 미션 기록 생성 (발급 시각 기록)
+            com.petready.backend.domain.mission.entity.Mission mission = com.petready.backend.domain.mission.entity.Mission.builder()
+                    .device(device)
+                    .type(NotificationType.BARKING.name())
+                    .issuedAt(LocalDateTime.now())
+                    .isCompleted(false)
+                    .build();
+            missionRepository.save(mission);
+
+            // 2. 사용자 앱으로 푸시 즉시 토스 (BK-05)
+            if (device.getUser() != null && device.getUser().getFcmToken() != null) {
+                String petName = device.getPetName() != null ? device.getPetName() : "반려견";
+                fcmNotificationService.sendNotification(
+                        device.getUser().getFcmToken(),
+                        "펫-레디 알림",
+                        petName + "가 짖고 있어요! 얼른 달래줘야 해요",
+                        NotificationType.BARKING
+                );
+            }
+            log.info("기기 [{}] 하드웨어 짖음 수신 성공: 짖음 미션 생성 및 앱 FCM 알림 즉시 발송", deviceId);
+        } else {
+            log.info("기기 [{}] 이미 진행 중인 짖음 미션이 존재하므로 짖음 수집 수신을 스킵합니다.", deviceId);
+        }
     }
 }

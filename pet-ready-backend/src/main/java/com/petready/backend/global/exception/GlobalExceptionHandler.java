@@ -2,6 +2,7 @@ package com.petready.backend.global.exception;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -14,6 +15,7 @@ import java.util.Map;
 /**
  * 애플리케이션 전역에서 발생하는 예외를 가로채어 공통된 형식으로 응답하는 클래스입니다.
  */
+@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -61,6 +63,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ErrorResponse> handleGeneralException(Exception ex) {
+        log.error("[GlobalExceptionHandler] Internal Server Error: ", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ErrorResponse("SERVER_ERROR", "서버 내부 오류가 발생했습니다."));
     }

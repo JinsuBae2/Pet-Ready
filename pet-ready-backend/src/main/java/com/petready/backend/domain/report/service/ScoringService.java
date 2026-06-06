@@ -31,6 +31,8 @@ public class ScoringService {
     private final WalkRepository walkRepository;
     private final MissionRepository missionRepository;
     private final PetReportRepository reportRepository;
+    private final com.petready.backend.domain.device.repository.DeviceRepository deviceRepository;
+    private final com.petready.backend.domain.score.repository.RealTimeScoreRepository realTimeScoreRepository;
     private final ObjectMapper objectMapper;
 
     /**
@@ -51,28 +53,25 @@ public class ScoringService {
                         .build());
 
         // 2. 누적 통계 데이터 조회
-        List<Walk> allWalks = walkRepository.findAllByUserEmail(user.getEmail());
         List<Mission> allMissions = missionRepository.findAllByDeviceUserEmail(user.getEmail());
 
-        // 3. 점수 산출 (BigDecimal 정밀 연산)
-        BigDecimal walkRate = calculateWalkRate(allWalks);
-        BigDecimal missionRate = calculateMissionRate(allMissions);
-        BigDecimal healthPenalty = calculateHealthPenalty(latestWalk); // 이번 산책 기준 패널티
+        // 3. 기기 및 실시간 점수 조회 (레거시 가중치 공식 수식 완전 삭제 및 일원화 - BK-08)
+        com.petready.backend.domain.device.entity.Device device = deviceRepository.findByUserEmail(user.getEmail())
+                .orElseThrow(() -> new IllegalArgumentException("해당 유저에게 등록된 기기가 없습니다."));
+        
+        com.petready.backend.domain.score.entity.RealTimeScore realTimeScore = realTimeScoreRepository.findById(device.getDeviceId())
+                .orElseGet(() -> com.petready.backend.domain.score.entity.RealTimeScore.builder()
+                        .device(device)
+                        .currentScore(100)
+                        .build());
 
-        // Score = (Walk_rate * 0.4) + (Mission_rate * 0.3) - (Health_penalty * 0.3)
-        BigDecimal totalScore = walkRate.multiply(new BigDecimal("0.4"))
-                .add(missionRate.multiply(new BigDecimal("0.3")))
-                .subtract(healthPenalty.multiply(new BigDecimal("0.3")))
-                .setScale(2, RoundingMode.HALF_UP);
-
-        // Clamping (0 ~ 100)
-        totalScore = totalScore.max(BigDecimal.ZERO).min(new BigDecimal("100"));
+        BigDecimal totalScore = BigDecimal.valueOf(realTimeScore.getCurrentScore());
 
         // 4. 가상 영수증 생성 및 패널티 합산
         List<Map<String, Object>> receiptItems = new ArrayList<>();
         long penaltyAmount = calculateReceiptAndPopulateItems(allMissions, latestWalk, receiptItems);
 
-        // 5. 등급 판정 (A~F)
+        // 5. 등급 판정 (A~F) - 실시간 점수 기준으로 통일
         String grade = determineGrade(totalScore);
 
         // 6. 리포트 업데이트

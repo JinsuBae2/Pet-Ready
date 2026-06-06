@@ -30,4 +30,12 @@ public interface PetStatusLogRepository extends JpaRepository<PetStatusLog, Long
      * @return 가장 최근 로그 (Optional)
      */
     java.util.Optional<PetStatusLog> findFirstByDeviceDeviceIdOrderByRecordedAtDesc(String deviceId);
+
+    /**
+     * 특정 시각 이전에 저장된 모든 상태 로그들을 삭제합니다.
+     * 
+     * @param dateTime 기준 시각
+     * @return 삭제된 행 개수
+     */
+    long deleteByRecordedAtBefore(LocalDateTime dateTime);
 }

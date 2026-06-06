@@ -37,6 +37,7 @@ public class AnalysisService {
     private final MissionRepository missionRepository;
     private final RealTimeScoreRepository realTimeScoreRepository;
     private final UserAnalysisResultRepository userAnalysisResultRepository;
+    private final com.petready.backend.domain.score.repository.ScoreEventRepository scoreEventRepository;
     private final WekaClassifierHelper wekaClassifierHelper;
 
     /**
@@ -108,17 +109,55 @@ public class AnalysisService {
         double f4 = device.getSickCount() * 0.1;
         f4 = Math.min(1.0, f4);
 
-        // F5: 최근 점수 상태 트렌드 (0.0 ~ 1.0, currentScore / 100.0)
-        double f5 = currentScore / 100.0;
-        f5 = Math.min(1.0, Math.max(0.0, f5));
+        // F5: score_events 기반 최근 3일 평균 / 이전 평균의 변동 추세 비율 (BK-13)
+        double f5 = 1.0;
+        java.time.LocalDateTime threeDaysAgo = java.time.LocalDateTime.now().minusDays(3);
+        List<com.petready.backend.domain.score.entity.ScoreEvent> events = scoreEventRepository.findAllByDeviceDeviceId(deviceId);
+        
+        double recentSum = 0;
+        int recentCount = 0;
+        double previousSum = 0;
+        int previousCount = 0;
+        
+        for (com.petready.backend.domain.score.entity.ScoreEvent event : events) {
+            if (event.getOccurredAt().isAfter(threeDaysAgo)) {
+                recentSum += event.getScoreAfter();
+                recentCount++;
+            } else {
+                previousSum += event.getScoreAfter();
+                previousCount++;
+            }
+        }
+        
+        double recentAvg = recentCount > 0 ? recentSum / recentCount : currentScore;
+        double previousAvg = previousCount > 0 ? previousSum / previousCount : 0.0;
+        
+        if (previousAvg == 0.0) {
+            f5 = 1.0; // 이전 평균 점수가 0점(이력이 없거나 0점)일 시 1.0(중립 트렌드) Fallback 방어 수식
+        } else {
+            f5 = recentAvg / previousAvg;
+            f5 = Math.min(1.0, Math.max(0.0, f5)); // Clamping 0.0 ~ 1.0
+        }
 
-        log.info("[AI 분석 엔진] 특성 벡터 산출 - F1(완료율): {}, F2(응답속도): {} (평균: {}초), F3(산책달성): {}, F4(방전): {}, F5(점수): {}",
-                f1, f2, avgResponseSec, f3, f4, f5);
+        // F6: 밥그릇(bowl) 싱크율을 반영하는 진정성 피딩 지수 (BK-13)
+        double f6 = 1.0;
+        List<Mission> feedingMissions = missions.stream()
+                .filter(m -> "FEEDING".equals(m.getType()))
+                .collect(java.util.stream.Collectors.toList());
+        long totalFeeding = feedingMissions.size();
+        if (totalFeeding > 0) {
+            long completedFeeding = feedingMissions.stream().filter(Mission::getIsCompleted).count();
+            f6 = (double) completedFeeding / totalFeeding;
+            f6 = Math.min(1.0, Math.max(0.0, f6));
+        }
 
-        // 4. ML 파이프라인(Weka RF & K-Means) 예측 수행 (예외 발생 시 규칙 기반 Fallback 모드로 완벽 방어)
+        log.info("[AI 분석 엔진] 특성 벡터 산출 - F1(완료율): {}, F2(응답속도): {} (평균: {}초), F3(산책달성): {}, F4(방전): {}, F5(점수추세): {}, F6(피딩진정성): {}",
+                f1, f2, avgResponseSec, f3, f4, f5, f6);
+
+        // 4. ML 파이프라인(Weka RF & K-Means) 예측 수행 (6차원 확장)
         String userType;
         try {
-            WekaClassifierHelper.MlResult mlResult = wekaClassifierHelper.analyzeParentingBehavior(f1, f2, f3, f4, f5);
+            WekaClassifierHelper.MlResult mlResult = wekaClassifierHelper.analyzeParentingBehavior(f1, f2, f3, f4, f5, f6);
             
             // 예측 분류 결과와 군집 결과를 결합하여 최종 v2.1 6대 유형으로 매핑
             if ("READY".equals(mlResult.predictedClass)) {
