@@ -26,7 +26,7 @@ public class SwaggerConfig {
     public OpenAPI openAPI() {
         String securitySchemeName = "bearerAuth";
         return new OpenAPI()
-                .addServersItem(new io.swagger.v3.oas.models.servers.Server().url("http://220.67.0.147:8080").description("안드로이드 연동 테스트 서버"))
+                .addServersItem(new io.swagger.v3.oas.models.servers.Server().url("http://220.67.0.218:8080").description("안드로이드 연동 테스트 서버"))
                 .addServersItem(new io.swagger.v3.oas.models.servers.Server().url("http://localhost:8080").description("로컬 개발 서버"))
                 .addSecurityItem(new SecurityRequirement().addList(securitySchemeName))
                 .components(new Components()

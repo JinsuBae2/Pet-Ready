@@ -16,6 +16,7 @@ import com.petready.backend.domain.report.entity.PetReport;
 import com.petready.backend.domain.report.repository.PetReportRepository;
 import com.petready.backend.domain.user.entity.User;
 import com.petready.backend.global.enums.NotificationType;
+import com.petready.backend.domain.command.repository.CommandRepository;
 import jakarta.persistence.EntityNotFoundException;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,6 +59,9 @@ public class MissionServiceTest {
 
     @Mock
     private FcmNotificationService fcmNotificationService;
+
+    @Mock
+    private CommandRepository commandRepository;
 
     @Spy
     private ObjectMapper objectMapper = new ObjectMapper();

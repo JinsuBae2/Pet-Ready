@@ -59,6 +59,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/pet/**").permitAll()
                 // 푸시 알림 수동 테스트 API 허용
                 .requestMatchers("/api/v1/fcm/**").permitAll()
+                .requestMatchers("/api/v1/device/bark-event", "/api/v1/device/vision-event").permitAll()
                 // 그 외 모든 요청은 인증 필요
                 .anyRequest().authenticated()
             )

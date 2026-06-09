@@ -6,6 +6,7 @@ import com.petready.backend.domain.communication.dto.PetStatusRequest;
 import com.petready.backend.domain.communication.dto.PetStatusResponse;
 import com.petready.backend.domain.communication.dto.PetBarkEventRequest;
 import com.petready.backend.domain.communication.dto.JetsonVisionSyncRequest;
+import com.petready.backend.domain.communication.dto.PetVisionEventRequest;
 import com.petready.backend.domain.communication.service.PetCommunicationService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
@@ -131,6 +132,26 @@ public class PetCommunicationController {
     public ResponseEntity<Void> acknowledgeCommand(@PathVariable Long commandId) {
         // 특정 명령 ID에 대해 수신 확인을 처리하여 중복 수신을 방지합니다.
         communicationService.acknowledgeCommand(commandId);
+        return ResponseEntity.ok().build();
+    }
+
+    /**
+     * 로컬 통합 테스트용 비전 이벤트 수신 API (웹캠 -> 서버)
+     */
+    @Operation(
+        summary = "로컬 비전 이벤트 수신 API", 
+        description = "로컬 환경(localhost) 검증용 웹캠 비전 센서가 밥그릇(FOOD_BOWL) 안착을 감지했을 때 호출됩니다. 'bowlDetected = true' 상태를 동기화하여 피딩 미션을 완수시킵니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "로컬 비전 이벤트 수신 및 처리 성공"),
+        @ApiResponse(responseCode = "404", description = "등록되지 않은 기기 ID가 전달됨")
+    })
+    @PostMapping("/api/v1/device/vision-event")
+    public ResponseEntity<Void> receiveLocalVisionEvent(@Valid @RequestBody PetVisionEventRequest request) {
+        // eventType이 FOOD_BOWL인 경우 실물 밥그릇이 감지된 것으로 처리하여 동기화
+        if ("FOOD_BOWL".equalsIgnoreCase(request.getEventType())) {
+            communicationService.syncVisionByJetson(request.getDeviceId(), true);
+        }
         return ResponseEntity.ok().build();
     }
 }

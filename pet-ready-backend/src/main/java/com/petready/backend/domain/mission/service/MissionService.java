@@ -1,5 +1,7 @@
 package com.petready.backend.domain.mission.service;
 
+import com.petready.backend.domain.command.entity.Command;
+import com.petready.backend.domain.command.repository.CommandRepository;
 import com.petready.backend.domain.device.entity.Device;
 import com.petready.backend.domain.device.repository.DeviceRepository;
 import com.petready.backend.domain.mission.dto.MissionResponse;
@@ -44,6 +46,7 @@ public class MissionService {
     private final PetReportRepository reportRepository;
     private final ObjectMapper objectMapper;
     private final FcmNotificationService fcmNotificationService;
+    private final CommandRepository commandRepository;
 
     /**
      * 사용자가 미션을 완료(응답) 처리합니다.
@@ -71,6 +74,17 @@ public class MissionService {
         mission.complete(now, responseTimeSec);
         missionRepository.save(mission);
         log.info("미션 [{}] 완료 처리 완료. 응답 시간: {}초", missionId, responseTimeSec);
+
+        // [이벤트 기반 제어] FEEDING 미션 완료 시 비전 종료 명령(STOP_VISION) 주입
+        if ("FEEDING".equalsIgnoreCase(mission.getType()) && mission.getDevice() != null) {
+            Command stopVisionCommand = Command.builder()
+                    .device(mission.getDevice())
+                    .command("STOP_VISION")
+                    .durationSec(0)
+                    .build();
+            commandRepository.save(stopVisionCommand);
+            log.info("기기 [{}] - 미션 완료에 따른 비전 종료 명령어(STOP_VISION) 생성 완료.", mission.getDevice().getDeviceId());
+        }
 
         // 3. 완료 시 FCM 알림 전송 (MISSION_COMPLETED 전용 JSON 데이터 페이로드 전송)
         User user = mission.getDevice().getUser();
@@ -179,6 +193,17 @@ public class MissionService {
         mission.start(LocalDateTime.now());
         missionRepository.save(mission);
         log.info("미션 [{}] 진행 시작 처리 완료.", missionId);
+
+        // [이벤트 기반 제어] FEEDING 미션인 경우, 비전 기동 명령(START_VISION)을 디바이스 명령어 큐에 주입
+        if ("FEEDING".equalsIgnoreCase(mission.getType()) && mission.getDevice() != null) {
+            Command startVisionCommand = Command.builder()
+                    .device(mission.getDevice())
+                    .command("START_VISION")
+                    .durationSec(1800) // 30분 타임아웃
+                    .build();
+            commandRepository.save(startVisionCommand);
+            log.info("기기 [{}] - 미션 시작에 따른 비전 기동 명령어(START_VISION) 생성 완료.", mission.getDevice().getDeviceId());
+        }
 
         return MissionResponse.from(mission);
     }
