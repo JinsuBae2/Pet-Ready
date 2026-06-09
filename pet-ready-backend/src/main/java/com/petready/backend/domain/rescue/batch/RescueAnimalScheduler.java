@@ -87,7 +87,8 @@ public class RescueAnimalScheduler {
      */
     public void fetchAndCacheRescueAnimals() throws Exception {
         // serviceKey 파라미터가 자동으로 이중 인코딩되는 문제를 방지하기 위해 java.net.URI 객체를 직접 조립하여 호출합니다.
-        String urlString = apiUrl + "?serviceKey=" + apiKey + "&_type=json&numOfRows=50";
+        // upkind=417000 파라미터를 명시하여 100% 개(강아지) 유기동물 데이터만 필터링 수집합니다.
+        String urlString = apiUrl + "?serviceKey=" + apiKey + "&_type=json&numOfRows=50&upkind=417000";
         URI uri = new URI(urlString);
 
         log.info("[구조동물 스케줄러] API 요청 URL: {}", apiUrl);
@@ -101,7 +102,6 @@ public class RescueAnimalScheduler {
         JsonNode itemNode = root.path("response").path("body").path("items").path("item");
 
         if (itemNode.isMissingNode() || itemNode.isNull()) {
-            // resultCode 또는 resultMsg 확인
             JsonNode header = root.path("response").path("header");
             String resultCode = header.path("resultCode").asText();
             String resultMsg = header.path("resultMsg").asText();
@@ -134,7 +134,13 @@ public class RescueAnimalScheduler {
 
                 String popfile = item.path("popfile").asText();
                 String happenDt = item.path("happenDt").asText();
-                String kindCd = item.path("kindCd").asText();
+                
+                // 공식 품종 명칭인 kindNm 파싱 (없을 경우 kindCd를 Fallback으로 사용)
+                String kindNm = item.path("kindNm").asText();
+                if (kindNm == null || kindNm.trim().isEmpty()) {
+                    kindNm = item.path("kindCd").asText("믹스견");
+                }
+                
                 String age = item.path("age").asText("알 수 없음");
                 String careNm = item.path("careNm").asText("알 수 없음");
                 String orgNm = item.path("orgNm").asText("");
@@ -147,30 +153,38 @@ public class RescueAnimalScheduler {
                     rescueDate = LocalDate.now();
                 }
 
-                // 2. 품종 및 축종 문자열 가공 (예: "[개] 믹스견" -> species="개", breed="믹스견")
-                String species = "기타";
-                String breed = kindCd;
-                if (kindCd.startsWith("[개]")) {
-                    species = "개";
-                    breed = kindCd.substring(3).trim();
-                } else if (kindCd.startsWith("[고양이]")) {
-                    species = "고양이";
-                    breed = kindCd.substring(5).trim();
-                } else if (kindCd.startsWith("[")) {
-                    int closeBracket = kindCd.indexOf("]");
+                // 2. 품종 및 축종 문자열 가공 (개 전용)
+                String species = "개";
+                String breed = kindNm;
+                if (kindNm.startsWith("[개]")) {
+                    breed = kindNm.substring(3).trim();
+                } else if (kindNm.startsWith("[")) {
+                    int closeBracket = kindNm.indexOf("]");
                     if (closeBracket > 0) {
-                        species = kindCd.substring(1, closeBracket).trim();
-                        breed = kindCd.substring(closeBracket + 1).trim();
+                        breed = kindNm.substring(closeBracket + 1).trim();
                     }
                 }
 
-                // 3. 지역 명칭 파싱 (기관명 orgNm의 첫 단어 기준 추출, 예: "경기도 성남시" -> "경기도")
+                // 공공데이터 고유 숫자 분류 코드가 반환되는 예외 상황에 대한 안전장치 매핑
+                if ("000114".equals(breed) || breed.contains("000114")) {
+                    breed = "믹스견";
+                } else if ("000072".equals(breed) || breed.contains("000072")) {
+                    breed = "진도개";
+                } else if ("000054".equals(breed) || breed.contains("000054")) {
+                    breed = "말티즈";
+                } else if ("000212".equals(breed) || breed.contains("000212")) {
+                    breed = "시추";
+                } else if (breed != null && breed.matches("\\d+")) {
+                    breed = "믹스견";
+                }
+
+                // 3. 지역 명칭 파싱
                 String region = "전국";
                 if (!orgNm.trim().isEmpty()) {
                     region = orgNm.split(" ")[0];
                 }
 
-                // 4. DB에 Upsert (동일한 animalId 존재 여부에 따름)
+                // 4. DB에 Upsert
                 final String finalSpecies = species;
                 final String finalBreed = breed;
                 final String finalRegion = region;
@@ -231,7 +245,6 @@ public class RescueAnimalScheduler {
         
         List<RescueAnimalCache> mockAnimals = new ArrayList<>();
         
-        // 20마리의 각기 다른 가상 구조동물 리스트 (품종, 나이, 지역, 썸네일 이미지 등 다각화)
         mockAnimals.add(createMockAnimal("F01", "개", "골든리트리버", "2022(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
         mockAnimals.add(createMockAnimal("F02", "개", "라브라도리트리버", "2021(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(2)));
         mockAnimals.add(createMockAnimal("F03", "개", "비글", "2023(년생)", "인천동물보호소", "인천광역시", "https://images.unsplash.com/photo-1537151608828-ea2b117b6281?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(3)));
@@ -243,16 +256,16 @@ public class RescueAnimalScheduler {
         mockAnimals.add(createMockAnimal("F09", "개", "시바이누", "2021(년생)", "충남유기견보호협회", "충청남도", "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(6)));
         mockAnimals.add(createMockAnimal("F10", "개", "진도개", "2020(년생)", "전남동물구호센터", "전라남도", "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(7)));
         
-        mockAnimals.add(createMockAnimal("F11", "고양이", "코리안숏헤어", "2022(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
-        mockAnimals.add(createMockAnimal("F12", "고양이", "페르시안", "2021(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1533738363-b7f9aef128ce?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(2)));
-        mockAnimals.add(createMockAnimal("F13", "고양이", "스코티시폴드", "2023(년생)", "인천동물보호소", "인천광역시", "https://images.unsplash.com/photo-1573865526739-10659fec78a5?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(3)));
+        mockAnimals.add(createMockAnimal("F11", "개", "치와와", "2022(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
+        mockAnimals.add(createMockAnimal("F12", "개", "웰시코기", "2021(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1612536057832-2ff7eed58194?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(2)));
+        mockAnimals.add(createMockAnimal("F13", "개", "닥스훈트", "2023(년생)", "인천동물보호소", "인천광역시", "https://images.unsplash.com/photo-1503256207526-0d5d80fa2f47?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(3)));
         mockAnimals.add(createMockAnimal("F14", "개", "퍼그", "2022(년생)", "경북동물구조협회", "경상북도", "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(4)));
         mockAnimals.add(createMockAnimal("F15", "개", "웰시코기", "2021(년생)", "충남유기견보호협회", "충청남도", "https://images.unsplash.com/photo-1612536057832-2ff7eed58194?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(5)));
         mockAnimals.add(createMockAnimal("F16", "개", "믹스견", "2023(년생)", "전남동물구호센터", "전라남도", "https://images.unsplash.com/photo-1561037404-61cd46aa615b?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(6)));
         mockAnimals.add(createMockAnimal("F17", "개", "요크셔테리어", "2020(년생)", "부산동물사랑보호센터", "부산광역시", "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(3)));
         mockAnimals.add(createMockAnimal("F18", "개", "치와와", "2022(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
         mockAnimals.add(createMockAnimal("F19", "개", "닥스훈트", "2021(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1503256207526-0d5d80fa2f47?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(8)));
-        mockAnimals.add(createMockAnimal("F20", "고양이", "샴", "2022(년생)", "부산동물사랑보호센터", "부산광역시", "https://images.unsplash.com/photo-1557008075-7f2c5efa4cfd?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(4)));
+        mockAnimals.add(createMockAnimal("F20", "개", "진도개", "2022(년생)", "부산동물사랑보호센터", "부산광역시", "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(4)));
 
         for (RescueAnimalCache mock : mockAnimals) {
             if (!rescueAnimalCacheRepository.existsByAnimalId(mock.getAnimalId())) {

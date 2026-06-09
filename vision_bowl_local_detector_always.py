@@ -59,6 +59,19 @@ while cap.isOpened():
     detected_conf = 0.0
     detected_cls_name = "CONTAINER"
     
+    # 1. 화면에 감지된 모든 물체(Confidence >= 0.25) 얇은 선으로 시각화 (디버깅용)
+    for box in results.boxes:
+        cls = int(box.cls[0])
+        conf = float(box.conf[0])
+        if conf >= 0.25:
+            x1, y1, x2, y2 = map(int, box.xyxy[0])
+            cls_name = model.names[cls]
+            # 연한 파란색 계열로 얇은 박스 드로잉
+            cv2.rectangle(frame, (x1, y1), (x2, y2), (255, 200, 100), 1)
+            cv2.putText(frame, f"{cls_name} {conf*100:.1f}%", (x1, y1 - 4),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.45, (255, 200, 100), 1)
+
+    # 2. 그 중 우리의 타깃 사물(BOWL, PLATE, CUP)이 있고 감도 기준을 넘는지 검사
     for box in results.boxes:
         cls = int(box.cls[0])
         conf = float(box.conf[0])
@@ -76,12 +89,12 @@ while cap.isOpened():
                 detected_cls_name = "BOWL"
             break
 
-    # 밥그릇/컵/접시 검출 시 실시간 Bounding Box 선 렌더링
+    # 3. 밥그릇/컵/접시 검출 시 실시간 굵은 Bounding Box 선 렌더링
     if bowl_detected_in_this_frame and detected_box_coords is not None:
         x1, y1, x2, y2 = map(int, detected_box_coords)
-        box_color = (0, 255, 0) if is_event_sent else (255, 255, 0)
+        box_color = (0, 255, 0) if is_event_sent else (0, 255, 255)
         cv2.rectangle(frame, (x1, y1), (x2, y2), box_color, 3)
-        cv2.putText(frame, f"{detected_cls_name} DETECTED ({detected_conf*100:.1f}%)", (x1, y1 - 10), 
+        cv2.putText(frame, f"TARGET: {detected_cls_name} ({detected_conf*100:.1f}%)", (x1, y1 - 10), 
                     cv2.FONT_HERSHEY_SIMPLEX, 0.6, box_color, 2)
 
     # 디바운싱 및 상태 머신 흐름 통제
