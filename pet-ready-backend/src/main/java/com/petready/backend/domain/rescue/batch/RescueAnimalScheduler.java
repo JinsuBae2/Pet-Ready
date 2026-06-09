@@ -88,7 +88,7 @@ public class RescueAnimalScheduler {
     public void fetchAndCacheRescueAnimals() throws Exception {
         // serviceKey 파라미터가 자동으로 이중 인코딩되는 문제를 방지하기 위해 java.net.URI 객체를 직접 조립하여 호출합니다.
         // upkind=417000 파라미터를 명시하여 100% 개(강아지) 유기동물 데이터만 필터링 수집합니다.
-        String urlString = apiUrl + "?serviceKey=" + apiKey + "&_type=json&numOfRows=50&upkind=417000";
+        String urlString = apiUrl + "?serviceKey=" + apiKey + "&_type=json&numOfRows=100&upkind=417000";
         URI uri = new URI(urlString);
 
         log.info("[구조동물 스케줄러] API 요청 URL: {}", apiUrl);

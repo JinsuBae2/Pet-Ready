@@ -61,3 +61,16 @@ dependencies {
 tasks.named('test') {
     useJUnitPlatform()
 }
+
+// JVM 포크 태스크(bootRun, test 등) 구동 시 로컬 .env 파일의 환경 변수를 자동으로 주입합니다.
+tasks.withType(JavaForkOptions) {
+    def envFile = file(".env")
+    if (envFile.exists()) {
+        envFile.eachLine { line ->
+            if (!line.trim().startsWith("#") && line.contains("=")) {
+                def parts = line.split("=", 2)
+                environment parts[0].trim(), parts[1].trim()
+            }
+        }
+    }
+}

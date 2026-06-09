@@ -65,6 +65,13 @@ public class PetReport extends BaseEntity {
     private Integer totalMissionCount;
 
     /**
+     * 생성형 AI가 분석한 피드백 평론 문구 (Lazy 캐싱 대상)
+     */
+    @Lob
+    @Column(name = "ai_feedback", columnDefinition = "TEXT")
+    private String aiFeedback;
+
+    /**
      * 리포트 정보를 새로운 데이터로 갱신합니다.
      */
     public void updateReport(BigDecimal score, String grade, Long additionalAmount, String detailsJson) {
@@ -72,6 +79,10 @@ public class PetReport extends BaseEntity {
         this.grade = grade;
         this.totalReceiptAmount += additionalAmount;
         this.receiptDetailsJson = detailsJson;
+    }
+    
+    public void updateAiFeedback(String aiFeedback) {
+        this.aiFeedback = aiFeedback;
     }
     
     public void incrementWalkCount() {

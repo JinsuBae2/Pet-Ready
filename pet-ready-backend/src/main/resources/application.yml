@@ -58,6 +58,9 @@ public-data:
   api-url: "http://apis.data.go.kr/1543061/abandonmentPublicService_v2/abandonmentPublic_v2"
   api-key: "a8dc86b97bb6234dfe8fa74726b8c3dec43e478e52f76b61b2748f1b3b7f62df"
 
+# Gemini API 설정
+gemini:
+  api-key: ${GEMINI_API_KEY:}
 
 ---
 # 개발 환경 (Local) 프로필 (H2 인메모리 DB 사용 - 아주 가볍고 RAM을 적게 먹습니다)

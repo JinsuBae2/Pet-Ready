@@ -9,6 +9,7 @@ import com.petready.backend.domain.mission.repository.MissionRepository;
 import com.petready.backend.domain.report.dto.FinalReportResponse;
 import com.petready.backend.domain.report.entity.PetReport;
 import com.petready.backend.domain.report.repository.PetReportRepository;
+import com.petready.backend.domain.report.service.ReportService;
 import com.petready.backend.domain.rescue.entity.RescueAnimalCache;
 import com.petready.backend.domain.rescue.repository.RescueAnimalCacheRepository;
 import com.petready.backend.domain.score.entity.RealTimeScore;
@@ -45,6 +46,7 @@ import java.util.stream.Collectors;
 public class ReportController {
 
     private final AnalysisService analysisService;
+    private final ReportService reportService;
     private final DeviceRepository deviceRepository;
     private final WalkRepository walkRepository;
     private final MissionRepository missionRepository;
@@ -126,7 +128,19 @@ public class ReportController {
         // 4. 추천 품종에 잘 부합하는 실물 유기견 리스트 최대 5건을 캐시 테이블에서 매칭 및 추출합니다. (BK-10/BK-12)
         List<FinalReportResponse.RecommendedAnimalDto> recommendedAnimals = matchRescueAnimals(analysisResult);
 
-        // 5. 응답 JSON 조립 및 반환 처리를 수행합니다.
+        // 5. 생성형 AI 피드백을 Lazy Caching하여 융합합니다.
+        double walkRatio = totalGoalWalk == 0 ? 0.0 : totalActualWalk / totalGoalWalk;
+        String aiFeedback = reportService.getOrGenerateAiFeedback(
+                email,
+                analysisResult,
+                finalScore,
+                walkRatio,
+                (int) completedMissions,
+                (int) totalMissions,
+                device.getSickCount()
+        );
+
+        // 6. 응답 JSON 조립 및 반환 처리를 수행합니다.
         FinalReportResponse.BreedRecommendation breedRecDto = FinalReportResponse.BreedRecommendation.builder()
                 .type(analysisResult.getBreedType())
                 .examples(analysisResult.getBreedExamples())
@@ -145,7 +159,7 @@ public class ReportController {
                 .userType(analysisResult.getUserType())
                 .userTypeLabel(analysisResult.getUserTypeLabel())
                 .breedRecommendation(breedRecDto)
-                .contextMessage(analysisResult.getContextMessage())
+                .contextMessage(aiFeedback)
                 .recommendedAnimals(recommendedAnimals)
                 .build();
 
