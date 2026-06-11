@@ -43,7 +43,7 @@ public class RescueAnimalScheduler {
      * DB가 비어 있는 경우 20마리의 Mock 데이터를 즉시 채웁니다.
      * 이후 백그라운드 스레드를 통해 실시간 API 수집 테스트를 수행합니다.
      */
-    @PostConstruct
+    @org.springframework.context.event.EventListener(org.springframework.boot.context.event.ApplicationReadyEvent.class)
     public void init() {
         log.info("========== [구조동물 스케줄러 초기화 시작] ==========");
         
