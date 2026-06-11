@@ -1,0 +1,191 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_app"
+    android:orientation="vertical">
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="22dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="마이 페이지"
+                android:textColor="@color/pet_text"
+                android:textSize="26sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:id="@+id/rowProfile"
+                android:layout_width="match_parent"
+                android:layout_height="82dp"
+                android:layout_marginTop="22dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <ImageView
+                    android:id="@+id/ivMorePetAvatar"
+                    android:layout_width="58dp"
+                    android:layout_height="58dp"
+                    android:background="@drawable/bg_avatar_circle"
+                    android:contentDescription="펫 프로필"
+                    android:padding="10dp"
+                    android:src="@drawable/ic_robot_pet" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="16dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:id="@+id/tvMorePetName"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="몽치"
+                        android:textColor="@color/pet_text"
+                        android:textSize="20sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="3dp"
+                        android:text="반려견 로봇"
+                        android:textColor="@color/pet_text_muted"
+                        android:textSize="13sp" />
+                </LinearLayout>
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:background="#E2E8F0" />
+
+            <LinearLayout
+                android:id="@+id/rowMyInfo"
+                style="@style/MoreMenuRow">
+
+                <TextView style="@style/MoreMenuIcon" android:text="♙" />
+                <TextView style="@style/MoreMenuTitle" android:text="내 정보" />
+                <TextView style="@style/MoreMenuValue" android:text="›" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowNotification"
+                style="@style/MoreMenuRow">
+
+                <TextView style="@style/MoreMenuIcon" android:text="♢" />
+                <TextView style="@style/MoreMenuTitle" android:text="알림 설정" />
+                <TextView style="@style/MoreMenuValue" android:text="›" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowSupport"
+                style="@style/MoreMenuRow">
+
+                <TextView style="@style/MoreMenuIcon" android:text="♡" />
+                <TextView style="@style/MoreMenuTitle" android:text="고객센터" />
+                <TextView style="@style/MoreMenuValue" android:text="›" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowAppInfo"
+                style="@style/MoreMenuRow">
+
+                <TextView style="@style/MoreMenuIcon" android:text="ⓘ" />
+                <TextView style="@style/MoreMenuTitle" android:text="앱 정보" />
+                <TextView style="@style/MoreMenuValue" android:text="v1.0.0  ›" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowFinalReportPreview"
+                style="@style/MoreMenuRow">
+
+                <TextView style="@style/MoreMenuIcon" android:text="▣" />
+                <TextView style="@style/MoreMenuTitle" android:text="최종 리포트 미리보기" />
+                <TextView style="@style/MoreMenuValue" android:text="›" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:id="@+id/rowResetDemo"
+                style="@style/MoreMenuRow">
+
+                <TextView style="@style/MoreMenuIcon" android:text="↺" />
+                <TextView style="@style/MoreMenuTitle" android:text="데모 기록 초기화" />
+                <TextView style="@style/MoreMenuValue" android:text="›" />
+            </LinearLayout>
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="1dp"
+                android:layout_marginTop="8dp"
+                android:background="#E2E8F0" />
+
+            <TextView
+                android:id="@+id/btnMoreLogout"
+                android:layout_width="match_parent"
+                android:layout_height="62dp"
+                android:layout_marginTop="18dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:text="↪   로그아웃"
+                android:textColor="#DC2626"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/layoutBottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="86dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:background="@drawable/bg_bottom_nav"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:id="@+id/btnNavHome"
+            style="@style/MoreBottomNavItem"
+            android:text="홈" />
+
+        <TextView
+            android:id="@+id/btnNavMission"
+            style="@style/MoreBottomNavItem"
+            android:text="미션" />
+
+        <TextView
+            android:id="@+id/btnNavWalk"
+            style="@style/MoreBottomNavItem"
+            android:text="산책" />
+
+        <TextView
+            android:id="@+id/btnNavExpense"
+            style="@style/MoreBottomNavItem"
+            android:text="지출" />
+
+        <TextView
+            android:id="@+id/btnNavMore"
+            style="@style/MoreBottomNavItemActive"
+            android:text="더보기" />
+    </LinearLayout>
+</LinearLayout>

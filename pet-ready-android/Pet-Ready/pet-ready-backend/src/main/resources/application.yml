@@ -1,0 +1,107 @@
+# Spring Boot 기본 설정
+spring:
+  profiles:
+    active: dev
+  application:
+    name: pet-ready-backend
+  
+  # 데이터베이스 설정 (MariaDB 기준)
+  datasource:
+    driver-class-name: org.mariadb.jdbc.Driver
+    # 기본은 로컬 환경을 바라보도록 설정
+    url: ${MARIADB_URL:jdbc:mariadb://localhost:3306/pet_ready?serverTimezone=Asia/Seoul}
+    username: ${MARIADB_USER:root}
+    password: ${MARIADB_PASSWORD:2019}
+
+  # JPA 설정
+  jpa:
+    hibernate:
+      ddl-auto: update # 개발 환경에서는 update, 운영 단계에서는 validate 권장
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+        dialect: org.hibernate.dialect.MariaDBDialect
+
+# Swagger 설정
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+    groups-order: DESC
+    operations-sorter: alpha
+    disable-swagger-default-url: true
+    display-request-duration: true
+  api-docs:
+    path: /v3/api-docs
+  show-actuator: true
+  default-consumes-media-type: application/json
+  default-produces-media-type: application/json
+
+# 로깅 설정
+logging:
+  level:
+    root: INFO
+    com.petready.backend: DEBUG
+    org.hibernate.SQL: DEBUG # SQL 쿼리 로그 출력
+
+# Firebase FCM 설정
+fcm:
+  key-path: firebase/pet-ready-serviceAccountKey.json # src/main/resources/firebase 내부에 위치해야 함
+
+# 공공데이터 API 설정
+public-data:
+  api-url: "http://apis.data.go.kr/1543061/abandonmentPublicService_v2/abandonmentPublic_v2"
+  api-key: "a8dc86b97bb6234dfe8fa74726b8c3dec43e478e52f76b61b2748f1b3b7f62df"
+
+
+---
+# 개발 환경 (Local) 프로필 (H2 인메모리 DB 사용 - 아주 가볍고 RAM을 적게 먹습니다)
+spring:
+  config:
+    activate:
+      on-profile: local
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:pet_ready_dev;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: 
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 시작 시 스키마 자동 생성
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
+---
+# 운영 환경 (Jetson Nano) 프로필
+spring:
+  config:
+    activate:
+      on-profile: prod
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+
+---
+# 테스트 환경 (JUnit) 프로필 (H2 인메모리 DB 및 Dialect 사용)
+spring:
+  config:
+    activate:
+      on-profile: test
+  datasource:
+    driver-class-name: org.h2.Driver
+    url: jdbc:h2:mem:pet_ready_test;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password: 
+  jpa:
+    hibernate:
+      ddl-auto: create-drop # 테스트 구동 시 자동 테이블 스키마 생성 및 초기화
+    properties:
+      hibernate:
+        dialect: org.hibernate.dialect.H2Dialect
+
