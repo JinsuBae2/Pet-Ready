@@ -32,16 +32,16 @@ public class WalkService {
      * 산책 기록을 저장하고 즉시 리포트를 업데이트합니다.
      */
     @Transactional
-    public void endWalk(WalkEndRequest request) {
+    public void endWalk(WalkEndRequest request, String email) {
         // 1. 기기 정보 및 사용자 정보 조회
         Device device = deviceRepository.findById(request.getDeviceId())
                 .orElseThrow(() -> new EntityNotFoundException("등록되지 않은 기기입니다: " + request.getDeviceId()));
         
         User user = device.getUser();
 
-        // 2. 요청된 userId와 기기 소유자가 일치하는지 검증
-        if (!user.getId().equals(request.getUserId())) {
-            throw new IllegalArgumentException("기기 소유자 정보가 일치하지 않습니다.");
+        // 2. 로그인된 사용자 정보와 기기 소유자가 일치하는지 이메일 검증
+        if (!user.getEmail().equalsIgnoreCase(email)) {
+            throw new IllegalArgumentException("기기 소유자 정보와 로그인된 사용자 정보가 일치하지 않습니다.");
         }
 
         // 3. Division by Zero 방어 로직 및 목표 거리 치팅 방지 (클라이언트가 아닌 DB 설정값 기준)

@@ -22,10 +22,6 @@ import java.util.List;
 @Schema(description = "산책 종료 및 기록 저장 요청")
 public class WalkEndRequest {
 
-    @Schema(description = "산책을 수행한 사용자의 고유 식별자", example = "1")
-    @NotNull(message = "사용자 ID는 필수입니다.")
-    private Long userId;
-
     @Schema(description = "산책에 사용된 기기 고유 ID", example = "DOG_01")
     @NotBlank(message = "기기 ID는 필수입니다.")
     private String deviceId;
@@ -40,10 +36,12 @@ public class WalkEndRequest {
 
     @Schema(description = "산책 시작 시각 (타임스탬프)", example = "2026-05-19T14:00:00")
     @NotNull(message = "산책 시작 시간은 필수입니다.")
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startedAt;
 
     @Schema(description = "산책 종료 시각 (타임스탬프)", example = "2026-05-19T14:30:00")
     @NotNull(message = "산책 종료 시간은 필수입니다.")
+    @com.fasterxml.jackson.annotation.JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endedAt;
 
     @Schema(description = "산책 경로 좌표 배열 (순수 JSON 배열)")

@@ -33,23 +33,41 @@ except (ImportError, AttributeError) as e:
 
 # 2. 카메라 하드웨어 초기화 함수
 def initialize_camera():
-    backends = [cv2.CAP_AVFOUNDATION, cv2.CAP_ANY]
-    for index in range(5):
+    import platform
+    current_os = platform.system()
+    
+    if current_os == "Linux":
+        backends = [cv2.CAP_V4L2, cv2.CAP_ANY]
+    else:
+        backends = [cv2.CAP_AVFOUNDATION, cv2.CAP_ANY]
+        
+    for index in range(3):
         for backend in backends:
             try:
                 cap = cv2.VideoCapture(index, backend)
                 if cap.isOpened():
+                    # 리눅스 로지텍 C310 웹캠 호환성을 극대화하기 위해 포맷과 해상도 명시적 세팅
+                    if current_os == "Linux":
+                        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+                        cap.set(cv2.CAP_PROP_FRAME_WIDTH, 640)
+                        cap.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
+                        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1) # 버퍼 크기 1로 고정하여 밀림 렉 원천 차단
+                    
                     ret, test_frame = cap.read()
                     if ret and test_frame is not None:
                         mean_brightness = np.mean(test_frame)
-                        if mean_brightness > 2.0:
-                            print(f"✅ 카메라 장치 인덱스 [{index}] (백엔드: {backend}, 밝기: {mean_brightness:.2f}) 연결 성공!")
-                            return cap
+                        print(f"✅ 카메라 장치 인덱스 [{index}] (백엔드: {backend}, 밝기: {mean_brightness:.2f}) 연결 성공!")
+                        return cap
                     cap.release()
-            except Exception:
+            except Exception as e:
+                print(f"⚠️ 인덱스 [{index}] 백엔드 [{backend}] 탐색 예외 발생: {e}")
                 continue
     print("⚠️ 실제 카메라를 탐색하지 못했습니다. 기본 장치(0번) 연결을 재시도합니다.")
-    return cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
+    cap = cv2.VideoCapture(0, cv2.CAP_V4L2 if current_os == "Linux" else cv2.CAP_ANY)
+    if current_os == "Linux" and cap.isOpened():
+        cap.set(cv2.CAP_PROP_FOURCC, cv2.VideoWriter_fourcc(*'MJPG'))
+        cap.set(cv2.CAP_PROP_BUFFERSIZE, 1)
+    return cap
 
 # 3. 명령어 조회 API (Polling)
 def check_server_command():
@@ -147,6 +165,13 @@ def main():
     bowl_missed_counter = 0
     is_bowl_event_sent = False
     
+    # 젯슨나노 연산 부하 완화를 위한 최적화 변수
+    loop_count = 0
+    bowl_detected_in_this_frame = False
+    detected_box_coords = None
+    detected_conf = 0.0
+    detected_cls_name = "CONTAINER"
+    
     # 제스쳐 상태 변수
     gesture_detect_type = "NONE"
     gesture_frame_counter = 0
@@ -161,7 +186,9 @@ def main():
     poll_interval = 4.0 # STANDBY 상태 시 4초마다 폴링
     last_check_cancel_time = 0
     
-    cv2.namedWindow('Pet-Ready Integrated Local Vision AI Simulation', cv2.WINDOW_NORMAL)
+    HEADLESS_MODE = False  # 실시간 모니터 창 활성화 (카메라 화면 표출)
+    if not HEADLESS_MODE:
+        cv2.namedWindow('Pet-Ready Integrated Local Vision AI Simulation', cv2.WINDOW_NORMAL)
 
     while True:
         current_time = time.time()
@@ -216,7 +243,8 @@ def main():
                 print("⏳ 비전 탐색 시간 초과(Timeout) ➡️ 카메라를 끄고 대기 모드로 전환합니다.")
                 if cap:
                     cap.release()
-                cv2.destroyAllWindows()
+                if not HEADLESS_MODE:
+                    cv2.destroyAllWindows()
                 state = "STANDBY"
                 print(f"\n📡 백엔드 서버 ({SERVER_URL}) 연결 대기 중 (상태: STANDBY)...")
                 continue
@@ -227,7 +255,8 @@ def main():
                 print("❌ 카메라 프레임을 읽을 수 없습니다. 대기 모드로 돌아갑니다.")
                 if cap:
                     cap.release()
-                cv2.destroyAllWindows()
+                if not HEADLESS_MODE:
+                    cv2.destroyAllWindows()
                 state = "STANDBY"
                 print(f"\n📡 백엔드 서버 ({SERVER_URL}) 연결 대기 중 (상태: STANDBY)...")
                 continue
@@ -237,30 +266,32 @@ def main():
             h, w, _ = frame.shape
 
             # ----------------------------------------------------
-            # [A] 밥그릇 감지 알고리즘 (YOLOv8)
+            # [A] 밥그릇 감지 알고리즘 (YOLOv8) - 6프레임당 1회만 연산하도록 스킵하여 렉 제거
             # ----------------------------------------------------
-            results = model(frame, verbose=False)[0]
-            bowl_detected_in_this_frame = False
-            detected_box_coords = None
-            detected_conf = 0.0
-            detected_cls_name = "CONTAINER"
-            
-            for box in results.boxes:
-                cls = int(box.cls[0])
-                conf = float(box.conf[0])
+            loop_count += 1
+            if loop_count % 6 == 0:
+                results = model(frame, verbose=False)[0]
+                bowl_detected_in_this_frame = False
+                detected_box_coords = None
+                detected_conf = 0.0
+                detected_cls_name = "CONTAINER"
                 
-                # COCO 29: frisbee (PLATE), 41: cup (CUP), 45: bowl (BOWL)
-                if cls in [29, 41, 45] and conf >= CONFIDENCE_THRES:
-                    bowl_detected_in_this_frame = True
-                    detected_box_coords = box.xyxy[0]
-                    detected_conf = conf
-                    if cls == 29:
-                        detected_cls_name = "PLATE"
-                    elif cls == 41:
-                        detected_cls_name = "CUP"
-                    else:
-                        detected_cls_name = "BOWL"
-                    break
+                for box in results.boxes:
+                    cls = int(box.cls[0])
+                    conf = float(box.conf[0])
+                    
+                    # COCO 29: frisbee (PLATE), 41: cup (CUP), 45: bowl (BOWL)
+                    if cls in [29, 41, 45] and conf >= CONFIDENCE_THRES:
+                        bowl_detected_in_this_frame = True
+                        detected_box_coords = box.xyxy[0]
+                        detected_conf = conf
+                        if cls == 29:
+                            detected_cls_name = "PLATE"
+                        elif cls == 41:
+                            detected_cls_name = "CUP"
+                        else:
+                            detected_cls_name = "BOWL"
+                        break
                     
             # 밥그릇 디바운싱 통제 및 전송
             if bowl_detected_in_this_frame:
@@ -378,7 +409,8 @@ def main():
             else:
                 cv2.putText(frame, "GESTURE: READY", (30, h - 50), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (255, 255, 0), 2)
 
-            cv2.imshow('Pet-Ready Integrated Local Vision AI Simulation', frame)
+            if not HEADLESS_MODE:
+                cv2.imshow('Pet-Ready Integrated Local Vision AI Simulation', frame)
             
             # 탐지 모드 진행 중 강제 취소 명령(STOP_VISION) 확인 (3초마다 체크)
             if current_time - last_check_cancel_time >= 3.0:
@@ -392,7 +424,8 @@ def main():
                         acknowledge_command(cmd_id)
                         if cap:
                             cap.release()
-                        cv2.destroyAllWindows()
+                        if not HEADLESS_MODE:
+                            cv2.destroyAllWindows()
                         state = "STANDBY"
                         print(f"\n📡 백엔드 서버 ({SERVER_URL}) 연결 대기 중 (상태: STANDBY)...")
                         continue
@@ -401,12 +434,16 @@ def main():
             time.sleep(0.015)
 
             # 'q' 키 누르면 수동 종료
-            if cv2.waitKey(1) & 0xFF == ord('q'):
-                print("🛑 사용자에 의한 수동 종료.")
-                if cap:
-                    cap.release()
-                cv2.destroyAllWindows()
-                break
+            if not HEADLESS_MODE:
+                if cv2.waitKey(1) & 0xFF == ord('q'):
+                    print("🛑 사용자에 의한 수동 종료.")
+                    if cap:
+                        cap.release()
+                    cv2.destroyAllWindows()
+                    break
+            else:
+                # 헤드리스용 미세 슬립 보완
+                time.sleep(0.01)
  
 if __name__ == "__main__":
     try:

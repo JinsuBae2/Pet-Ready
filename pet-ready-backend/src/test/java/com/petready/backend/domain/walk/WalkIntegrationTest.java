@@ -58,11 +58,10 @@ public class WalkIntegrationTest {
         // 2. Device A 산책 종료 찌르기 (2.0km 걸음 -> 달성률 100%)
         WalkEndRequest walkReq = new WalkEndRequest();
         ReflectionTestUtils.setField(walkReq, "deviceId", "DEVICE_A");
-        ReflectionTestUtils.setField(walkReq, "userId", 1L);
         ReflectionTestUtils.setField(walkReq, "distanceKm", new java.math.BigDecimal("2.0"));
         ReflectionTestUtils.setField(walkReq, "durationSec", 3600L);
         
-        walkService.endWalk(walkReq);
+        walkService.endWalk(walkReq, "test@petready.com");
 
         // 검증 1: 100% 달성이므로 WALK_FULL, +5점 호출되었는지 검증
         verify(scoreService).processScoreEvent(eq("DEVICE_A"), eq("WALK_FULL"), eq(5), any(String.class));
