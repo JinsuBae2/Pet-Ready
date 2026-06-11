@@ -214,12 +214,14 @@ public class TrainingService {
             return null;
         }
 
-        // 3초(3000ms) 경과 여부 판단
-        if (System.currentTimeMillis() - info.getOccurredAt() > 3000) {
-            resultLockCache.remove(deviceId); // 만료 시 캐시 소거
+        // 60초 이상 기기가 안 가져가면 만료 소거
+        if (System.currentTimeMillis() - info.getOccurredAt() > 60000) {
+            resultLockCache.remove(deviceId);
             return null;
         }
 
+        // 아두이노가 상태 조회 폴링으로 1회 읽어가는 즉시 소거 (Consume)
+        resultLockCache.remove(deviceId);
         return info;
     }
 }

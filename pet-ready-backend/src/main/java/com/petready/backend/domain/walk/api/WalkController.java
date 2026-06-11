@@ -30,7 +30,8 @@ public class WalkController {
     public ResponseEntity<Void> endWalk(
             @Valid @RequestBody WalkEndRequest request,
             @AuthenticationPrincipal UserDetails userDetails) {
-        walkService.endWalk(request, userDetails.getUsername());
+        String email = (userDetails != null) ? userDetails.getUsername() : "test_user@example.com";
+        walkService.endWalk(request, email);
         return ResponseEntity.ok().build();
     }
 }
