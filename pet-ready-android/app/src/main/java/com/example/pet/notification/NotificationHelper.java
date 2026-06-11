@@ -16,6 +16,7 @@ import androidx.core.app.NotificationManagerCompat;
 import com.example.pet.MainActivity;
 import com.example.pet.R;
 import com.example.pet.repository.ActivityLogRepository;
+import com.example.pet.ui.MissionActivity;
 import com.example.pet.ui.UrgentMissionActivity;
 
 public class NotificationHelper {
@@ -23,6 +24,7 @@ public class NotificationHelper {
     private static final long[] URGENT_VIBRATION_PATTERN = new long[]{0, 300, 120, 300};
     private static final int TEST_NOTIFICATION_ID = 1001;
     private static final int URGENT_MISSION_NOTIFICATION_ID = 2001;
+    private static final int COMPLETED_MISSION_NOTIFICATION_BASE_ID = 3000;
 
     private NotificationHelper() {
     }
@@ -117,5 +119,37 @@ public class NotificationHelper {
                 .setAutoCancel(true);
 
         NotificationManagerCompat.from(context).notify(URGENT_MISSION_NOTIFICATION_ID, builder.build());
+    }
+
+    public static void showMissionCompletedAlert(
+            Context context,
+            long missionId,
+            String title,
+            String message
+    ) {
+        Intent intent = new Intent(context, MissionActivity.class);
+        intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+
+        PendingIntent pendingIntent = PendingIntent.getActivity(
+                context,
+                (int) missionId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+        );
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(context, CHANNEL_ID)
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle(title)
+                .setContentText(message)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(message))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setDefaults(NotificationCompat.DEFAULT_ALL)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setContentIntent(pendingIntent)
+                .setAutoCancel(true);
+
+        int notificationId = COMPLETED_MISSION_NOTIFICATION_BASE_ID
+                + (int) Math.abs(missionId % 1000L);
+        NotificationManagerCompat.from(context).notify(notificationId, builder.build());
     }
 }

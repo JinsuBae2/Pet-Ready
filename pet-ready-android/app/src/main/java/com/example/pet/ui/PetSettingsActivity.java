@@ -6,6 +6,7 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
@@ -96,6 +97,11 @@ public class PetSettingsActivity extends AppCompatActivity {
         }
 
         profileRepository.saveProfile(petName, selectedAvatarType, selectedPhotoUri);
-        finish();
+        profileRepository.syncPetName(petName, (success, message) -> {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            if (success) {
+                finish();
+            }
+        });
     }
 }

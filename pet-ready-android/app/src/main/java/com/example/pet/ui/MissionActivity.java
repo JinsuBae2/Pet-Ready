@@ -28,6 +28,8 @@ public class MissionActivity extends AppCompatActivity {
     private ProgressBar progressMission;
     private MissionRepository missionRepository;
     private boolean bindingMissions = false;
+    private boolean lastLoadFromServer = false;
+    private String lastLoadMessage = "";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -39,6 +41,7 @@ public class MissionActivity extends AppCompatActivity {
         tvMissionStatus = findViewById(R.id.tvMissionStatus);
         progressMission = findViewById(R.id.progressMission);
         missionRepository = new MissionRepository(this);
+        findViewById(R.id.btnMissionBack).setOnClickListener(v -> finish());
 
         loadMissions();
     }
@@ -58,6 +61,8 @@ public class MissionActivity extends AppCompatActivity {
         missionRepository.getTodayMissions((loadedMissions, fromServer, message) -> {
             missions.clear();
             missions.addAll(loadedMissions);
+            lastLoadFromServer = fromServer;
+            lastLoadMessage = message;
             tvMissionStatus.setText(message);
             renderMissions();
         });
@@ -69,7 +74,9 @@ public class MissionActivity extends AppCompatActivity {
 
         if (missions.isEmpty()) {
             TextView emptyView = new TextView(this);
-            emptyView.setText("오늘은 등록된 미션이 없습니다.");
+            emptyView.setText(lastLoadFromServer
+                    ? "오늘은 등록된 미션이 없습니다."
+                    : lastLoadMessage);
             emptyView.setTextSize(16f);
             layoutMissionList.addView(emptyView);
         }
@@ -101,7 +108,7 @@ public class MissionActivity extends AppCompatActivity {
             titleView.setMaxLines(3);
 
             TextView statusView = new TextView(this);
-            statusView.setText(mission.completed ? "완료됨" : "진행 전");
+            statusView.setText(getMissionStatusText(mission));
             statusView.setTextSize(14f);
             statusView.setTypeface(Typeface.create("sans-serif-rounded", Typeface.BOLD));
             statusView.setGravity(Gravity.CENTER);
@@ -142,7 +149,7 @@ public class MissionActivity extends AppCompatActivity {
 
             Button completeButton = new Button(this);
             completeButton.setAllCaps(false);
-            completeButton.setText(mission.completed ? "완료" : getActionButtonText(mission));
+            completeButton.setText(getMissionButtonText(mission));
             completeButton.setTextSize(15f);
             completeButton.setTypeface(Typeface.create("sans-serif-rounded", Typeface.BOLD));
             completeButton.setEnabled(!mission.completed);
@@ -189,7 +196,7 @@ public class MissionActivity extends AppCompatActivity {
         } else {
             missionRow.setBackgroundResource(R.drawable.bg_mission_item);
             titleView.setTextColor(getColor(R.color.pet_text));
-            statusView.setText("진행 전");
+            statusView.setText(getMissionStatusText(mission));
             statusView.setTextColor(getColor(R.color.pet_warning));
             statusView.setBackgroundResource(R.drawable.bg_status_chip_wait);
             completeButton.setBackgroundTintList(null);
@@ -212,12 +219,30 @@ public class MissionActivity extends AppCompatActivity {
         return "미션 하러가기";
     }
 
-    private void openMissionTarget(MissionItem mission) {
-        if (isWalkMission(mission)) {
-            startActivity(new Intent(this, WalkActivity.class));
-            return;
+    private String getMissionStatusText(MissionItem mission) {
+        if (mission.completed || "COMPLETED".equalsIgnoreCase(mission.status)) {
+            return "완료됨";
         }
+        if ("IN_PROGRESS".equalsIgnoreCase(mission.status)) {
+            return "진행 중";
+        }
+        if ("FAILED".equalsIgnoreCase(mission.status)) {
+            return "실패";
+        }
+        return "진행 전";
+    }
 
+    private String getMissionButtonText(MissionItem mission) {
+        if (mission.completed || "COMPLETED".equalsIgnoreCase(mission.status)) {
+            return "완료";
+        }
+        if ("IN_PROGRESS".equalsIgnoreCase(mission.status)) {
+            return "진행 중";
+        }
+        return getActionButtonText(mission);
+    }
+
+    private void openMissionTarget(MissionItem mission) {
         Intent intent = new Intent(this, MissionDetailActivity.class);
         MissionIntentExtras.putMission(intent, mission);
         startActivity(intent);

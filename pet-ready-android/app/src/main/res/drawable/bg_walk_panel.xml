@@ -1,17 +1,33 @@
 <?xml version="1.0" encoding="utf-8"?>
-<shape xmlns:android="http://schemas.android.com/apk/res/android">
-    <solid android:color="@color/pet_surface" />
-    <stroke
-        android:width="1dp"
-        android:color="@color/pet_border" />
-    <corners
-        android:bottomLeftRadius="0dp"
-        android:bottomRightRadius="0dp"
-        android:topLeftRadius="26dp"
-        android:topRightRadius="26dp" />
-    <padding
-        android:bottom="18dp"
-        android:left="20dp"
-        android:right="20dp"
-        android:top="20dp" />
-</shape>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Top shadow highlight -->
+    <item android:top="0dp">
+        <shape>
+            <solid android:color="#0F4A3B32" />
+            <corners
+                android:bottomLeftRadius="0dp"
+                android:bottomRightRadius="0dp"
+                android:topLeftRadius="26dp"
+                android:topRightRadius="26dp" />
+        </shape>
+    </item>
+    <!-- Main Panel Body -->
+    <item android:top="4dp">
+        <shape>
+            <solid android:color="@color/pet_surface" />
+            <stroke
+                android:width="1.2dp"
+                android:color="@color/pet_border" />
+            <corners
+                android:bottomLeftRadius="0dp"
+                android:bottomRightRadius="0dp"
+                android:topLeftRadius="24dp"
+                android:topRightRadius="24dp" />
+            <padding
+                android:bottom="18dp"
+                android:left="20dp"
+                android:right="20dp"
+                android:top="20dp" />
+        </shape>
+    </item>
+</layer-list>

@@ -25,11 +25,12 @@ public class WalkRepository {
 
     public void sendWalkEnd(WalkEndRequest request) {
         Log.d(TAG, "Sending walk/end: durationSec=" + request.durationSec
-                + ", distanceKm=" + request.distanceKm);
+                + ", distanceKm=" + request.distanceKm
+                + ", deviceId=" + request.deviceId);
 
         String accessToken = authRepository.getAccessToken();
-        if (accessToken == null || accessToken.isEmpty() || accessToken.startsWith("demo-")) {
-            Log.d(TAG, "Walk result saved locally only.");
+        if (accessToken == null || accessToken.isEmpty() || request.deviceId.isEmpty()) {
+            Log.w(TAG, "Walk result was not sent because authentication or device data is missing.");
             return;
         }
 

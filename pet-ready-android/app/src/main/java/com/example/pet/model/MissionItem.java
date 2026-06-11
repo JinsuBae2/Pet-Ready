@@ -20,8 +20,11 @@ public class MissionItem {
     public String missionType;
 
     public String issuedAt;
+    public String startedAt;
     public String respondedAt;
+    public String completedAt;
     public Long responseTimeSec;
+    public String status;
 
     public MissionItem() {
     }

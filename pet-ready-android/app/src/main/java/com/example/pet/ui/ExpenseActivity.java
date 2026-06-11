@@ -46,6 +46,7 @@ public class ExpenseActivity extends AppCompatActivity {
         btnRefillFood = findViewById(R.id.btnRefillFood);
         btnRefillFood.setOnClickListener(v -> refillFood());
 
+        findViewById(R.id.btnExpenseBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnNavHome).setOnClickListener(v -> startActivity(new Intent(this, DashboardActivity.class)));
         findViewById(R.id.btnNavMission).setOnClickListener(v -> startActivity(new Intent(this, MissionActivity.class)));
         findViewById(R.id.btnNavWalk).setOnClickListener(v -> startActivity(new Intent(this, WalkActivity.class)));

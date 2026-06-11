@@ -11,6 +11,7 @@ public class AuthRepository {
     private static final String PREF_NAME = "pet_ready_auth";
     private static final String KEY_ACCESS_TOKEN = "access_token";
     private static final String KEY_REFRESH_TOKEN = "refresh_token";
+    private static final String KEY_ACCOUNT_EMAIL = "account_email";
 
     private final SharedPreferences preferences;
 
@@ -24,6 +25,20 @@ public class AuthRepository {
                 .putString(KEY_ACCESS_TOKEN, accessToken)
                 .putString(KEY_REFRESH_TOKEN, refreshToken)
                 .apply();
+    }
+
+    public String getAccountEmail() {
+        return preferences.getString(KEY_ACCOUNT_EMAIL, "");
+    }
+
+    public boolean isDifferentAccount(String email) {
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+        return !normalizedEmail.equals(getAccountEmail());
+    }
+
+    public void saveAccountEmail(String email) {
+        String normalizedEmail = email == null ? "" : email.trim().toLowerCase(java.util.Locale.ROOT);
+        preferences.edit().putString(KEY_ACCOUNT_EMAIL, normalizedEmail).apply();
     }
 
     public String getAccessToken() {
@@ -42,6 +57,7 @@ public class AuthRepository {
         preferences.edit()
                 .remove(KEY_ACCESS_TOKEN)
                 .remove(KEY_REFRESH_TOKEN)
+                .remove(KEY_ACCOUNT_EMAIL)
                 .apply();
     }
 }

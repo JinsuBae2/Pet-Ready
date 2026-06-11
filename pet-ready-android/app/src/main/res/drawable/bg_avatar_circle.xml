@@ -3,8 +3,8 @@
     android:shape="oval">
     <gradient
         android:angle="135"
-        android:endColor="#BFDBFE"
-        android:startColor="#DBEAFE" />
+        android:endColor="@color/pet_primary"
+        android:startColor="@color/pet_accent" />
     <stroke
         android:width="2dp"
         android:color="#FFFFFF" />

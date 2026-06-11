@@ -1,13 +1,16 @@
 package com.example.pet.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.CheckBox;
 import android.widget.EditText;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import com.example.pet.MainActivity;
 import com.example.pet.R;
 import com.example.pet.api.ApiClient;
 import com.example.pet.api.ApiErrorMessage;
@@ -80,7 +83,15 @@ public class RegisterActivity extends AppCompatActivity {
                 btnSubmitRegister.setEnabled(true);
 
                 if (response.isSuccessful()) {
-                    tvRegisterResult.setText("회원가입 성공! 로그인 화면으로 돌아가세요.");
+                    Toast.makeText(
+                            RegisterActivity.this,
+                            "회원가입이 완료되었습니다. 로그인해 주세요.",
+                            Toast.LENGTH_LONG
+                    ).show();
+                    Intent intent = new Intent(RegisterActivity.this, MainActivity.class);
+                    intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP | Intent.FLAG_ACTIVITY_SINGLE_TOP);
+                    startActivity(intent);
+                    finish();
                 } else {
                     tvRegisterResult.setText("회원가입 실패: " + ApiErrorMessage.from(response));
                 }

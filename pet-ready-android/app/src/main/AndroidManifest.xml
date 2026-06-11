@@ -3,6 +3,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
     <uses-permission android:name="android.permission.INTERNET"/>
+    <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -26,7 +27,9 @@
 
         <activity
             android:name=".MainActivity"
-            android:exported="true">
+            android:exported="true"
+            android:theme="@style/Theme.Pet.Login"
+            android:windowSoftInputMode="adjustPan">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
@@ -36,6 +39,7 @@
         </activity>
         <activity android:name=".ui.SimulationSetupActivity" />
         <activity android:name=".ui.FinalReportActivity" />
+        <activity android:name=".ui.TrainingActivity" />
         <activity android:name=".ui.ReportActivity" />
         <activity android:name=".ui.ExpenseActivity" />
         <activity android:name=".ui.ActivityLogActivity" />
@@ -50,6 +54,10 @@
         <activity android:name=".ui.PetSettingsActivity" />
         <activity android:name=".ui.MoreActivity" />
         <activity android:name=".ui.RegisterActivity" />
+        <activity
+            android:name="com.journeyapps.barcodescanner.CaptureActivity"
+            android:screenOrientation="portrait"
+            tools:replace="screenOrientation" />
 
         <service
             android:name=".notification.PetFirebaseMessagingService"

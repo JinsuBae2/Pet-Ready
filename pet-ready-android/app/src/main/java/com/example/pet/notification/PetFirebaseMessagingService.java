@@ -14,6 +14,9 @@ import java.util.Map;
 
 public class PetFirebaseMessagingService extends FirebaseMessagingService {
     private static final String TAG = "PetFCM";
+    public static final String ACTION_MISSION_COMPLETED =
+            "com.example.pet.action.MISSION_COMPLETED";
+    public static final String EXTRA_COMPLETED_MISSION_ID = "completed_mission_id";
     private static final long DEFAULT_URGENT_MISSION_ID = 101L;
     private static final String DEFAULT_URGENT_MISSION_TYPE = "BARKING_ALERT";
 
@@ -26,11 +29,17 @@ public class PetFirebaseMessagingService extends FirebaseMessagingService {
         Log.d(TAG, "FCM message received. data=" + data);
 
         long missionId = parseMissionId(data.get("missionId"));
+        String eventType = getFirst(data, "eventType", "notificationType", "type");
         String missionType = getOrDefault(getFirst(data, "missionType", "type"), DEFAULT_URGENT_MISSION_TYPE);
         String title = getOrDefault(getFirst(data, "title", "missionTitle", "notificationTitle"),
                 notification != null ? notification.getTitle() : "돌발 미션이 도착했어요");
         String message = getOrDefault(getFirst(data, "message", "missionMessage", "body", "content"),
                 notification != null ? notification.getBody() : "로봇 강아지의 상태를 확인하고 대응해 주세요.");
+
+        if ("MISSION_COMPLETED".equalsIgnoreCase(eventType)) {
+            notifyMissionCompleted(missionId, title, message);
+            return;
+        }
 
         if (isAppInForeground()) {
             openUrgentMissionActivity(missionId, missionType, title, message);
@@ -38,6 +47,26 @@ public class PetFirebaseMessagingService extends FirebaseMessagingService {
             NotificationHelper.createNotificationChannel(this);
             NotificationHelper.showUrgentMissionAlert(this, missionId, missionType, title, message);
         }
+    }
+
+    private void notifyMissionCompleted(long missionId, String title, String message) {
+        String completionTitle = title == null || title.isEmpty() ? "미션 성공" : title;
+        String completionMessage = message == null || message.isEmpty()
+                ? "미션에 성공했습니다."
+                : message;
+
+        Intent completedIntent = new Intent(ACTION_MISSION_COMPLETED);
+        completedIntent.setPackage(getPackageName());
+        completedIntent.putExtra(EXTRA_COMPLETED_MISSION_ID, missionId);
+        sendBroadcast(completedIntent);
+
+        NotificationHelper.createNotificationChannel(this);
+        NotificationHelper.showMissionCompletedAlert(
+                this,
+                missionId,
+                completionTitle,
+                completionMessage
+        );
     }
 
     @Override

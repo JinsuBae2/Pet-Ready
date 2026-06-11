@@ -6,17 +6,19 @@ package com.example.pet.model;
  */
 public class PetStatusRequest {
     public String deviceId;
-    public Integer batteryLevel;
-    public Boolean isCharging;
-    public Boolean touchActive;
-    public Double pressureValue;
+    public Boolean headTouch;
+    public Boolean backTouch1;
+    public Boolean backTouch2;
 
-    public PetStatusRequest(String deviceId, Integer batteryLevel, Boolean isCharging,
-                            Boolean touchActive, Double pressureValue) {
+    public PetStatusRequest(
+            String deviceId,
+            Boolean headTouch,
+            Boolean backTouch1,
+            Boolean backTouch2
+    ) {
         this.deviceId = deviceId;
-        this.batteryLevel = batteryLevel;
-        this.isCharging = isCharging;
-        this.touchActive = touchActive;
-        this.pressureValue = pressureValue;
+        this.headTouch = headTouch;
+        this.backTouch1 = backTouch1;
+        this.backTouch2 = backTouch2;
     }
 }

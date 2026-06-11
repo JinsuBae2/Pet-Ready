@@ -13,6 +13,13 @@
 
     <style name="Theme.Pet" parent="Base.Theme.Pet" />
 
+    <style name="Theme.Pet.Login" parent="Base.Theme.Pet">
+        <item name="android:statusBarColor">@color/login_cozy_cream</item>
+        <item name="android:navigationBarColor">@color/login_cozy_cream</item>
+        <item name="android:windowLightNavigationBar">true</item>
+        <item name="android:windowActionModeOverlay">true</item>
+    </style>
+
     <style name="MoreMenuRow">
         <item name="android:layout_width">match_parent</item>
         <item name="android:layout_height">56dp</item>
@@ -56,13 +63,18 @@
         <item name="android:layout_weight">1</item>
         <item name="android:gravity">center</item>
         <item name="android:textColor">@color/pet_text_muted</item>
-        <item name="android:textSize">13sp</item>
+        <item name="android:textSize">11sp</item>
         <item name="android:textStyle">bold</item>
+        <item name="android:drawableTint">@color/pet_text_muted</item>
+        <item name="android:drawablePadding">4dp</item>
+        <item name="android:paddingTop">8dp</item>
+        <item name="android:paddingBottom">6dp</item>
     </style>
 
     <style name="MoreBottomNavItemActive" parent="MoreBottomNavItem">
         <item name="android:background">@drawable/bg_nav_active</item>
         <item name="android:textColor">@color/pet_primary</item>
+        <item name="android:drawableTint">@color/pet_primary</item>
     </style>
 
     <style name="RegisterFieldLabel">

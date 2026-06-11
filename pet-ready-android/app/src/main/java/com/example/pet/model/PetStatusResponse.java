@@ -13,4 +13,8 @@ public class PetStatusResponse {
     public String mood;
     public String healthStatus;
     public String analysisMessage;
+    public String lcdCommand;
+    public String lcdTextLine1;
+    public String lcdTextLine2;
+    public String ledColor;
 }

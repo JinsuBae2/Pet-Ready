@@ -3,12 +3,12 @@ package com.example.pet.ui;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.pet.R;
 import com.example.pet.model.MissionItem;
-import com.example.pet.repository.ActivityLogRepository;
 import com.example.pet.repository.MissionRepository;
 
 public class UrgentMissionActivity extends AppCompatActivity {
@@ -26,7 +26,6 @@ public class UrgentMissionActivity extends AppCompatActivity {
     private TextView btnUrgentClose;
 
     private MissionRepository missionRepository;
-    private ActivityLogRepository activityLogRepository;
     private MissionItem mission;
 
     @Override
@@ -43,7 +42,6 @@ public class UrgentMissionActivity extends AppCompatActivity {
         btnUrgentClose = findViewById(R.id.btnUrgentClose);
 
         missionRepository = new MissionRepository(this);
-        activityLogRepository = new ActivityLogRepository(this);
         mission = buildMissionFromIntent();
 
         tvUrgentMissionTitle.setText(mission.title);
@@ -84,9 +82,17 @@ public class UrgentMissionActivity extends AppCompatActivity {
 
         missionRepository.completeMission(mission, (completedMission, fromServer, message) -> {
             mission = completedMission;
-            activityLogRepository.addUrgentMissionCompleted(mission.title);
-            btnUrgentRespond.setText("대응 완료");
-            tvUrgentMissionStatus.setText("완료");
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            if (mission.completed) {
+                btnUrgentRespond.setText("대응 완료");
+                tvUrgentMissionStatus.setText("완료");
+            } else if (fromServer && "FEEDING_TIME".equalsIgnoreCase(mission.missionType)) {
+                btnUrgentRespond.setText("밥그릇 인식 대기 중");
+                tvUrgentMissionStatus.setText("확인 대기");
+            } else {
+                btnUrgentRespond.setEnabled(true);
+                tvUrgentMissionStatus.setText("전송 실패");
+            }
         });
     }
 

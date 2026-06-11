@@ -11,10 +11,9 @@ public class ApiClient {
 
     /*
      * 서버 기본 주소
-     * 나중에 Jetson Nano 실제 IP로 바꿔야 한다.
-     * 예: http://192.168.0.15:8080/api/v1/
+     * 현재 백엔드 서버 주소
      */
-    private static final String BASE_URL = "http://220.67.0.141:8080/api/v1/";
+    private static final String BASE_URL = "http://220.67.0.218:8080/api/v1/";
 
     // Retrofit 객체를 한 번만 생성해서 재사용하기 위한 변수
     private static Retrofit retrofit;
