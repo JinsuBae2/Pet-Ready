@@ -93,7 +93,8 @@ public class MissionService {
                     user.getFcmToken(),
                     "미션 성공 완료!",
                     "[" + mission.getType() + "] 미션을 성공적으로 완료했습니다.",
-                    NotificationType.MISSION_COMPLETED
+                    NotificationType.MISSION_COMPLETED,
+                    missionId
             );
         } else {
             log.warn("사용자 [{}]의 FCM 토큰이 존재하지 않아 미션 완료 알림을 전송하지 못했습니다.", user != null ? user.getEmail() : "null");

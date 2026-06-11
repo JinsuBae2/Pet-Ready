@@ -99,7 +99,8 @@ public class MissionSchedulerService {
                     device.getUser().getFcmToken(),
                     "펫-레디 알림",
                     petName + "가 짖고 있어요! 얼른 달래줘야 해요",
-                    NotificationType.BARKING
+                    NotificationType.BARKING,
+                    mission.getId()
             );
         }
     }

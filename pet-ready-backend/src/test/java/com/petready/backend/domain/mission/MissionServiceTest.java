@@ -175,7 +175,7 @@ public class MissionServiceTest {
 
         // 2. FCM 알림 발송이 1회 호출되었는지 확인
         verify(fcmNotificationService, times(1)).sendNotification(
-                eq("FCM_TOKEN_TEST"), anyString(), anyString(), eq(NotificationType.MISSION_COMPLETED));
+                eq("FCM_TOKEN_TEST"), anyString(), anyString(), eq(NotificationType.MISSION_COMPLETED), eq(missionId));
 
         // 3. PetReport의 누적 합산 및 상세 JSON 영수증 Append 검증
         verify(reportRepository, times(1)).save(reportCaptor.capture());
@@ -279,7 +279,7 @@ public class MissionServiceTest {
 
         // then
         // FCM 전송 메소드가 호출되지 않았는지 검증
-        verify(fcmNotificationService, never()).sendNotification(anyString(), anyString(), anyString(), any(NotificationType.class));
+        verify(fcmNotificationService, never()).sendNotification(anyString(), anyString(), anyString(), any(NotificationType.class), any());
         // PetReport 레포지토리가 조회되지도 않고 저장되지도 않았는지 검증
         verify(reportRepository, never()).findByUserEmail(anyString());
         verify(reportRepository, never()).save(any(PetReport.class));

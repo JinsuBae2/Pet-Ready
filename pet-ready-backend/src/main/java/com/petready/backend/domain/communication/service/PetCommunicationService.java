@@ -237,7 +237,8 @@ public class PetCommunicationService {
                             device.getUser().getFcmToken(),
                             "펫-레디 알림",
                             petName + " 배가 고파요!",
-                            NotificationType.FEEDING
+                            NotificationType.FEEDING,
+                            feedingMission.getId()
                     );
                 }
             }
@@ -462,7 +463,8 @@ public class PetCommunicationService {
                         device.getUser().getFcmToken(),
                         "펫-레디 알림",
                         petName + "가 짖고 있어요! 얼른 달래줘야 해요",
-                        NotificationType.BARKING
+                        NotificationType.BARKING,
+                        mission.getId()
                 );
             }
             log.info("기기 [{}] 하드웨어 주도형 짖음 미션 발동 및 사용자 FCM 푸시 통스 완료", deviceId);

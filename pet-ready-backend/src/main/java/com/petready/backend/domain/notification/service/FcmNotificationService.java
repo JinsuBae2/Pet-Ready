@@ -14,15 +14,14 @@ import org.springframework.stereotype.Service;
 @Service
 public class FcmNotificationService {
 
-    /**
-     * 특정 기기 토큰으로 푸시 알림을 발송합니다.
-     *
-     * @param targetToken      수신 대상의 FCM 토큰
-     * @param title            알림 제목
-     * @param body             알림 본문
-     * @param notificationType 알림 종류(BARKING, FEEDING, MEDICAL 등)
-     */
     public void sendNotification(String targetToken, String title, String body, NotificationType notificationType) {
+        sendNotification(targetToken, title, body, notificationType, null);
+    }
+
+    /**
+     * 특정 기기 토큰으로 푸시 알림을 발송하며, 미션 식별자를 페이로드에 포함합니다.
+     */
+    public void sendNotification(String targetToken, String title, String body, NotificationType notificationType, Long missionId) {
         if (targetToken == null || targetToken.isEmpty()) {
             log.warn("FCM 토큰이 없어 알림({})을 보낼 수 없습니다.", notificationType);
             return;
@@ -34,14 +33,23 @@ public class FcmNotificationService {
                     .setBody(body)
                     .build();
 
-            Message message = Message.builder()
+            com.google.firebase.messaging.Message.Builder messageBuilder = Message.builder()
                     .setToken(targetToken)
                     .setNotification(notification)
                     .putData("type", notificationType.name())
-                    .build();
+                    .putData("eventType", notificationType.name())
+                    .putData("missionType", notificationType.name())
+                    .putData("title", title)
+                    .putData("message", body);
+
+            if (missionId != null) {
+                messageBuilder.putData("missionId", String.valueOf(missionId));
+            }
+
+            Message message = messageBuilder.build();
 
             String response = FirebaseMessaging.getInstance().send(message);
-            log.info("FCM 알림 발송 성공 [{}] response: {}", notificationType, response);
+            log.info("FCM 알림 발송 성공 [{}, missionId: {}] response: {}", notificationType, missionId, response);
             
         } catch (Exception e) {
             log.error("FCM 알림 발송 중 오류 발생 [{}]: {}", notificationType, e.getMessage());
