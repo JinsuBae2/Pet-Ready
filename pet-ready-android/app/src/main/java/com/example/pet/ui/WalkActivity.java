@@ -251,12 +251,17 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
         }
         activityLogRepository.addWalkEnded(formatDistance(totalDistanceMeters), formatElapsedTime());
         scoreRepository.applyWalkCompleted(lastWalkDurationSeconds, totalDistanceMeters);
+        List<WalkEndRequest.CoordinateDto> route = new ArrayList<>();
+        for (LatLng point : routePoints) {
+            route.add(new WalkEndRequest.CoordinateDto(point.latitude, point.longitude));
+        }
         walkRepository.sendWalkEnd(new WalkEndRequest(
                 walkStartTimeMillis,
                 walkEndTimeMillis,
                 lastWalkDurationSeconds,
                 totalDistanceMeters,
-                deviceRepository.getDeviceId()
+                deviceRepository.getDeviceId(),
+                route
         ));
         updateWalkInfo();
     }

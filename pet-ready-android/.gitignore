@@ -13,3 +13,8 @@
 .externalNativeBuild
 .cxx
 local.properties
+/app/google-services.json
+**/serviceAccountKey.json
+*.jks
+*.keystore
+keystore.properties

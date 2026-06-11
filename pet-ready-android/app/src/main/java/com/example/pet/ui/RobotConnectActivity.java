@@ -16,7 +16,6 @@ import com.example.pet.api.ApiService;
 import com.example.pet.model.DeviceRegisterRequest;
 import com.example.pet.repository.AuthRepository;
 import com.example.pet.repository.DeviceRepository;
-import com.example.pet.repository.SimulationRepository;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
@@ -141,10 +140,7 @@ public class RobotConnectActivity extends AppCompatActivity {
 
     private void openDashboard() {
         tvConnectStatus.postDelayed(() -> {
-            Class<?> nextActivity = new SimulationRepository(this).isSetupDone()
-                    ? DashboardActivity.class
-                    : SimulationSetupActivity.class;
-            Intent intent = new Intent(this, nextActivity);
+            Intent intent = new Intent(this, DashboardActivity.class);
             startActivity(intent);
             finish();
         }, 600);

@@ -49,6 +49,15 @@ public class SimulationRepository {
         return getCurrentDay() > getTotalDays();
     }
 
+    public void forceFinishSimulation() {
+        long completedStartedAt = System.currentTimeMillis()
+                - ((long) getTotalDays() + 1L) * DAY_MS;
+        preferences.edit()
+                .putBoolean(KEY_SETUP_DONE, true)
+                .putLong(KEY_STARTED_AT, completedStartedAt)
+                .apply();
+    }
+
     public void reset() {
         preferences.edit().clear().apply();
     }

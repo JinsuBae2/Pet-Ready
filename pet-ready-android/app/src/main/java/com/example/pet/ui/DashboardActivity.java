@@ -9,18 +9,22 @@ import android.widget.Button;
 import android.widget.ImageButton;
 import android.widget.ImageView;
 import android.widget.TextView;
+import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 
 import com.example.pet.R;
 import com.example.pet.model.CareStatus;
 import com.example.pet.model.DashboardResponse;
 import com.example.pet.model.MissionItem;
+import com.example.pet.model.PetStatusResponse;
 import com.example.pet.model.ReportSummary;
 import com.example.pet.repository.CareStatusRepository;
 import com.example.pet.repository.DashboardRepository;
 import com.example.pet.repository.MissionRepository;
 import com.example.pet.repository.PetProfileRepository;
+import com.example.pet.repository.PetStatusRepository;
 import com.example.pet.repository.ScoreRepository;
 import com.example.pet.repository.SimulationRepository;
 
@@ -36,6 +40,8 @@ public class DashboardActivity extends AppCompatActivity {
     private TextView tvHomeScoreEvent;
     private TextView tvTodayMissionSummary;
     private TextView tvTodayMissionStatus;
+    private TextView tvPetRoutineStatus;
+    private TextView tvPetLcdMessage;
     private Button btnReport;
     private ImageButton btnPetSettings;
     private Button btnActivityLog;
@@ -50,11 +56,13 @@ public class DashboardActivity extends AppCompatActivity {
     private SimulationRepository simulationRepository;
     private DashboardRepository dashboardRepository;
     private MissionRepository missionRepository;
+    private PetStatusRepository petStatusRepository;
     private final Handler dashboardHandler = new Handler(Looper.getMainLooper());
     private final Runnable dashboardPoller = new Runnable() {
         @Override
         public void run() {
             loadServerDashboard();
+            loadPetStatus();
             dashboardHandler.postDelayed(this, 30_000L);
         }
     };
@@ -75,6 +83,8 @@ public class DashboardActivity extends AppCompatActivity {
         tvHomeScoreEvent = findViewById(R.id.tvHomeScoreEvent);
         tvTodayMissionSummary = findViewById(R.id.tvTodayMissionSummary);
         tvTodayMissionStatus = findViewById(R.id.tvTodayMissionStatus);
+        tvPetRoutineStatus = findViewById(R.id.tvPetRoutineStatus);
+        tvPetLcdMessage = findViewById(R.id.tvPetLcdMessage);
         btnReport = findViewById(R.id.btnReport);
         btnPetSettings = findViewById(R.id.btnPetSettings);
         btnActivityLog = findViewById(R.id.btnActivityLog);
@@ -89,10 +99,15 @@ public class DashboardActivity extends AppCompatActivity {
         simulationRepository = new SimulationRepository(this);
         dashboardRepository = new DashboardRepository(this);
         missionRepository = new MissionRepository(this);
+        petStatusRepository = new PetStatusRepository(this);
 
         btnPetSettings.setOnClickListener(v -> startActivity(new Intent(this, PetSettingsActivity.class)));
         btnReport.setOnClickListener(v -> startActivity(new Intent(this, ReportActivity.class)));
         btnActivityLog.setOnClickListener(v -> startActivity(new Intent(this, ActivityLogActivity.class)));
+        findViewById(R.id.btnFeedPet).setOnClickListener(v -> feedPet());
+        findViewById(R.id.btnTrainingReward)
+                .setOnClickListener(v -> startActivity(new Intent(this, TrainingActivity.class)));
+        findViewById(R.id.btnForceFinishSimulation).setOnClickListener(v -> forceFinishSimulation());
         findViewById(R.id.btnOpenTodayMissions)
                 .setOnClickListener(v -> startActivity(new Intent(this, MissionActivity.class)));
         btnNavMission.setOnClickListener(v -> startActivity(new Intent(this, MissionActivity.class)));
@@ -161,6 +176,89 @@ public class DashboardActivity extends AppCompatActivity {
             }
             renderServerDashboard(dashboard);
         });
+    }
+
+    private void loadPetStatus() {
+        petStatusRepository.getStatus((status, errorMessage) -> {
+            if (status == null) {
+                tvPetRoutineStatus.setText("상태 연결 실패");
+                return;
+            }
+            renderPetStatus(status);
+        });
+    }
+
+    private void renderPetStatus(PetStatusResponse status) {
+        String mood = status.mood == null ? "HAPPY" : status.mood.toUpperCase(java.util.Locale.US);
+        tvPetRoutineStatus.setText(getMoodLabel(mood));
+        tvPetLcdMessage.setText(joinStatusText(status));
+        ivPetAvatar.setContentDescription("반려견 상태: " + mood);
+
+        if ("SICK".equals(mood) || "HUNGRY".equals(mood)
+                || "BARKING".equals(mood) || "CONFUSED".equals(mood)
+                || "SAD".equals(mood)) {
+            ivPetAvatar.setBackgroundResource(R.drawable.bg_pet_avatar_pink);
+        } else if ("SLEEPING".equals(mood) || "BORED".equals(mood)) {
+            ivPetAvatar.setBackgroundResource(R.drawable.bg_pet_avatar_blue);
+        } else {
+            ivPetAvatar.setBackgroundResource(R.drawable.bg_pet_avatar_green);
+        }
+    }
+
+    private String joinStatusText(PetStatusResponse status) {
+        String line1 = status.lcdTextLine1 == null ? "" : status.lcdTextLine1.trim();
+        String line2 = status.lcdTextLine2 == null ? "" : status.lcdTextLine2.trim();
+        if (!line1.isEmpty() || !line2.isEmpty()) {
+            return line1 + (line1.isEmpty() || line2.isEmpty() ? "" : "\n") + line2;
+        }
+        return status.analysisMessage == null ? "" : status.analysisMessage;
+    }
+
+    private String getMoodLabel(String mood) {
+        switch (mood) {
+            case "SLEEPING":
+                return "취침 중";
+            case "HUNGRY":
+                return "배고픔";
+            case "BARKING":
+                return "짖는 중";
+            case "SICK":
+                return "아픔";
+            case "BORED":
+                return "심심함";
+            case "SUCCESS":
+                return "훈련 성공";
+            case "CONFUSED":
+                return "혼란";
+            case "SAD":
+                return "속상함";
+            default:
+                return "행복";
+        }
+    }
+
+    private void feedPet() {
+        petStatusRepository.feed((success, errorMessage) -> {
+            if (success) {
+                Toast.makeText(this, "밥 주기 신호를 전송했습니다.", Toast.LENGTH_SHORT).show();
+                loadPetStatus();
+                return;
+            }
+            Toast.makeText(this, "밥 주기 실패: " + errorMessage, Toast.LENGTH_LONG).show();
+        });
+    }
+
+    private void forceFinishSimulation() {
+        new AlertDialog.Builder(this)
+                .setTitle("시뮬레이션 강제 종료")
+                .setMessage("데모용으로 체험 기간을 즉시 완료하고 최종 리포트로 이동할까요?")
+                .setNegativeButton("취소", null)
+                .setPositiveButton("종료", (dialog, which) -> {
+                    simulationRepository.forceFinishSimulation();
+                    Intent intent = new Intent(this, FinalReportActivity.class);
+                    startActivity(intent);
+                })
+                .show();
     }
 
     private void loadTodayMissionSummary() {
