@@ -131,12 +131,22 @@
                 android:textSize="20sp"
                 android:textStyle="bold" />
 
-            <LinearLayout
-                android:id="@+id/layoutFinalAnimals"
+            <TextView
+                android:id="@+id/tvFinalAnimalsEmpty"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="12dp"
-                android:orientation="vertical" />
+                android:text="추천 가능한 유기견 정보가 없습니다."
+                android:textColor="@color/pet_text_muted"
+                android:textSize="15sp"
+                android:visibility="gone" />
+
+            <androidx.recyclerview.widget.RecyclerView
+                android:id="@+id/rvFinalAnimals"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:nestedScrollingEnabled="false" />
         </LinearLayout>
 
         <Button

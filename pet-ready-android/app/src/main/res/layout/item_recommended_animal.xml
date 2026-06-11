@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    android:background="@drawable/bg_animal_card"
+    android:orientation="vertical"
+    android:padding="12dp">
+
+    <ImageView
+        android:id="@+id/ivRecommendedAnimal"
+        android:layout_width="match_parent"
+        android:layout_height="154dp"
+        android:background="@drawable/bg_animal_photo_placeholder"
+        android:clipToOutline="true"
+        android:contentDescription="추천 유기견 사진"
+        android:scaleType="centerCrop" />
+
+    <TextView
+        android:id="@+id/tvRecommendedAnimalBreed"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textColor="@color/pet_text"
+        android:textSize="18sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/tvRecommendedAnimalMeta"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/pet_text_muted"
+        android:textSize="13sp" />
+
+    <TextView
+        android:id="@+id/tvRecommendedAnimalDetail"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:lineSpacingExtra="3dp"
+        android:textColor="@color/pet_text_muted"
+        android:textSize="14sp" />
+</LinearLayout>
