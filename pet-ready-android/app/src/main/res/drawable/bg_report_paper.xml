@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Soft shadow -->
+    <item android:top="6dp" android:left="3dp" android:right="3dp" android:bottom="0dp">
+        <shape>
+            <solid android:color="#0F4A3B32" />
+            <corners android:radius="24dp" />
+        </shape>
+    </item>
+    <!-- Main Paper Body -->
+    <item android:top="0dp" android:left="0dp" android:right="0dp" android:bottom="6dp">
+        <shape>
+            <solid android:color="#FFFDF4" />
+            <stroke
+                android:width="2dp"
+                android:color="@color/pet_border" />
+            <corners android:radius="24dp" />
+            <padding
+                android:bottom="24dp"
+                android:left="22dp"
+                android:right="22dp"
+                android:top="24dp" />
+        </shape>
+    </item>
+</layer-list>

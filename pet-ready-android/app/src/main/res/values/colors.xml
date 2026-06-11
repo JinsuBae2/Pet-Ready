@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="black">#FF000000</color>
+    <color name="white">#FFFFFFFF</color>
+    <color name="pet_bg">#FAF6F0</color>
+    <color name="pet_surface">#BFFFFDFB</color>
+    <color name="pet_primary">#FF7A00</color>
+    <color name="pet_primary_dark">#E66E00</color>
+    <color name="pet_primary_pressed">#CC6200</color>
+    <color name="pet_accent">#FFC107</color>
+    <color name="pet_lavender">#FFF5E6</color>
+    <color name="pet_soft_blue">#FFF2E6</color>
+    <color name="pet_text">#4A3B32</color>
+    <color name="pet_text_muted">#8E7568</color>
+    <color name="pet_border">#FFEAD2</color>
+    <color name="pet_success">#2EC4B6</color>
+    <color name="pet_warning">#FFB300</color>
+    <color name="pet_mint">#F0FDF4</color>
+    <color name="pet_cream">#FFFDF0</color>
+    <color name="pet_danger">#FF4D4D</color>
+    <color name="pet_card_shadow">#1AFF7A00</color>
+    <color name="login_navy">#4A3B32</color>
+    <color name="login_blue_gray">#8E7568</color>
+    <color name="login_hint">#C0AFA6</color>
+    <color name="login_cozy_cream">#FAF6F0</color>
+    <color name="login_warm_orange">#FF7A00</color>
+    <color name="login_warm_orange_dark">#E66E00</color>
+    <color name="login_deep_charcoal">#4A3B32</color>
+    <color name="login_text_secondary">#8E7568</color>
+    <color name="login_input_hint">#C0AFA6</color>
+</resources>

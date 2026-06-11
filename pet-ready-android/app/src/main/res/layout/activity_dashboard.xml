@@ -1,0 +1,412 @@
+<?xml version="1.0" encoding="utf-8"?>
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_login_warm_blue">
+
+    <View
+        android:layout_width="270dp"
+        android:layout_height="270dp"
+        android:layout_gravity="top|start"
+        android:layout_marginStart="-92dp"
+        android:layout_marginTop="-78dp"
+        android:alpha="0.68"
+        android:background="@drawable/bg_login_bubble_large" />
+
+    <View
+        android:layout_width="230dp"
+        android:layout_height="230dp"
+        android:layout_gravity="top|end"
+        android:layout_marginTop="34dp"
+        android:layout_marginEnd="-88dp"
+        android:alpha="0.48"
+        android:background="@drawable/bg_login_bubble_large" />
+
+    <View
+        android:layout_width="220dp"
+        android:layout_height="220dp"
+        android:layout_gravity="bottom|end"
+        android:layout_marginEnd="-74dp"
+        android:layout_marginBottom="84dp"
+        android:alpha="0.36"
+        android:background="@drawable/bg_login_bubble_blue" />
+
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:fillViewport="true">
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:paddingLeft="20dp"
+            android:paddingRight="20dp"
+            android:paddingTop="20dp"
+            android:paddingBottom="106dp"
+            android:clipToPadding="false">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="@drawable/bg_home_glass_card"
+                android:elevation="3dp"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvDashboardTitle"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="실시간 대시보드"
+                        android:textColor="@color/pet_text"
+                        android:textSize="23sp"
+                        android:textStyle="bold" />
+
+                    <ImageButton
+                        android:id="@+id/btnPetSettings"
+                        android:layout_width="46dp"
+                        android:layout_height="46dp"
+                        android:background="@drawable/bg_home_soft_button"
+                        android:backgroundTint="@null"
+                        android:contentDescription="펫 설정"
+                        android:padding="12dp"
+                        android:scaleType="center"
+                        android:src="@drawable/ic_settings" />
+                </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <ImageView
+                        android:id="@+id/ivPetAvatar"
+                        android:layout_width="94dp"
+                        android:layout_height="94dp"
+                        android:background="@drawable/bg_avatar_circle"
+                        android:contentDescription="펫 이미지"
+                        android:scaleType="centerCrop" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="18dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:id="@+id/tvPetName"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="몽치"
+                            android:textColor="@color/pet_text"
+                            android:textSize="25sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvSimulationDay"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="8dp"
+                            android:background="@drawable/bg_home_chip"
+                            android:text="1일차 / 21일"
+                            android:textColor="@color/pet_primary_dark"
+                            android:textSize="13sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/tvPetType"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="9dp"
+                            android:text="펫-레디 로봇"
+                            android:textColor="@color/pet_text_muted"
+                            android:textSize="15sp" />
+
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_dashboard_status_card"
+                android:elevation="4dp"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="오늘의 컨디션"
+                    android:textColor="@color/pet_text"
+                    android:textSize="21sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="14dp"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="6dp"
+                        android:layout_weight="1"
+                        android:background="@drawable/bg_status_tile_fullness"
+                        android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="포만감"
+                        android:textColor="@color/pet_text"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvHungryGraph"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="35%"
+                        android:textColor="@color/pet_text"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                <ProgressBar
+                    android:id="@+id/progressHungry"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="9dp"
+                    android:layout_marginTop="10dp"
+                    android:max="100"
+                    android:progress="35"
+                    android:progressDrawable="@drawable/progress_fullness" />
+
+                    </LinearLayout>
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="6dp"
+                    android:layout_weight="1"
+                    android:background="@drawable/bg_status_tile_affinity"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="호감도"
+                        android:textColor="@color/pet_text"
+                        android:textSize="15sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/tvAffinityGraph"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:text="78%"
+                        android:textColor="@color/pet_text"
+                        android:textSize="24sp"
+                        android:textStyle="bold" />
+
+                <ProgressBar
+                    android:id="@+id/progressAffinity"
+                    style="?android:attr/progressBarStyleHorizontal"
+                    android:layout_width="match_parent"
+                    android:layout_height="9dp"
+                    android:layout_marginTop="10dp"
+                    android:max="100"
+                    android:progress="78"
+                    android:progressDrawable="@drawable/progress_affinity" />
+
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnActivityLog"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_home_action_button"
+                android:backgroundTint="@null"
+                app:backgroundTint="@null"
+                android:elevation="2dp"
+                android:text="활동 기록 보기"
+                android:textAllCaps="false"
+                android:textColor="@color/white"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_home_glass_card"
+                android:elevation="3dp"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="오늘의 미션"
+                    android:textColor="@color/pet_text"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTodayMissionSummary"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:text="전체 0개 · 완료 0개"
+                    android:textColor="@color/pet_primary_dark"
+                    android:textSize="18sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvTodayMissionStatus"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="오늘의 미션을 불러오는 중..."
+                    android:textColor="@color/pet_text_muted"
+                    android:textSize="14sp" />
+
+                <Button
+                    android:id="@+id/btnOpenTodayMissions"
+                    android:layout_width="match_parent"
+                    android:layout_height="52dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/bg_home_action_button"
+                    android:backgroundTint="@null"
+                    app:backgroundTint="@null"
+                    android:text="미션 목록 보기"
+                    android:textAllCaps="false"
+                    android:textColor="@color/white"
+                    android:textSize="15sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_home_glass_card"
+                android:elevation="3dp"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="양육 점수"
+                    android:textColor="@color/pet_text"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal">
+
+                    <TextView
+                        android:id="@+id/tvHomeScore"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="100점"
+                        android:textColor="@color/pet_primary"
+                        android:textSize="32sp"
+                        android:textStyle="bold" />
+
+                    <Button
+                        android:id="@+id/btnReport"
+                        android:layout_width="106dp"
+                        android:layout_height="46dp"
+                        android:background="@drawable/bg_home_soft_button"
+                        android:backgroundTint="@null"
+                        app:backgroundTint="@null"
+                        android:text="리포트"
+                        android:textAllCaps="false"
+                        android:textColor="@color/pet_primary_dark"
+                        android:textSize="14sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/tvHomeScoreEvent"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:text="아직 점수 변동 없음"
+                    android:textColor="@color/pet_text_muted"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
+
+    <LinearLayout
+        android:id="@+id/layoutBottomNav"
+        android:layout_width="match_parent"
+        android:layout_height="86dp"
+        android:layout_marginStart="16dp"
+        android:layout_marginEnd="16dp"
+        android:layout_marginBottom="12dp"
+        android:layout_gravity="bottom"
+        android:background="@drawable/bg_bottom_nav"
+        android:gravity="center"
+        android:orientation="horizontal"
+        android:paddingStart="8dp"
+        android:paddingEnd="8dp">
+
+        <TextView
+            android:id="@+id/btnNavHome"
+            style="@style/MoreBottomNavItemActive"
+            android:drawableTop="@drawable/ic_home"
+            android:text="홈" />
+
+        <TextView
+            android:id="@+id/btnNavMission"
+            style="@style/MoreBottomNavItem"
+            android:drawableTop="@drawable/ic_mission"
+            android:text="미션" />
+
+        <TextView
+            android:id="@+id/btnNavWalk"
+            style="@style/MoreBottomNavItem"
+            android:drawableTop="@drawable/ic_walk"
+            android:text="산책" />
+
+        <TextView
+            android:id="@+id/btnNavExpense"
+            style="@style/MoreBottomNavItem"
+            android:drawableTop="@drawable/ic_expense"
+            android:text="지출" />
+
+        <TextView
+            android:id="@+id/btnNavMore"
+            style="@style/MoreBottomNavItem"
+            android:drawableTop="@drawable/ic_more"
+            android:text="더보기" />
+    </LinearLayout>
+</FrameLayout>
