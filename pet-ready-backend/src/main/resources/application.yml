@@ -22,7 +22,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update # 개발 환경에서는 update, 운영 단계에서는 validate 권장
-    show-sql: true
+    show-sql: false
     properties:
       hibernate:
         format_sql: true
@@ -46,8 +46,8 @@ springdoc:
 logging:
   level:
     root: INFO
-    com.petready.backend: DEBUG
-    org.hibernate.SQL: DEBUG # SQL 쿼리 로그 출력
+    com.petready.backend: INFO
+    org.hibernate.SQL: INFO # SQL 쿼리 로그 끄기
 
 # Firebase FCM 설정
 fcm:
@@ -56,7 +56,7 @@ fcm:
 # 공공데이터 API 설정
 public-data:
   api-url: "http://apis.data.go.kr/1543061/abandonmentPublicService_v2/abandonmentPublic_v2"
-  api-key: "a8dc86b97bb6234dfe8fa74726b8c3dec43e478e52f76b61b2748f1b3b7f62df"
+  api-key: ${PUBLIC_DATA_API_KEY:}
 
 # Gemini API 설정
 gemini:

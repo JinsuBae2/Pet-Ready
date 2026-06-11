@@ -4,6 +4,12 @@ import time
 import numpy as np
 from ultralytics import YOLO
 import sys
+import warnings
+import logging
+
+# 콘솔 로그 및 경고 오버헤드 차단
+warnings.filterwarnings("ignore")
+logging.getLogger("ultralytics").setLevel(logging.ERROR)
 
 # 1. 로컬 환경 설정 변수
 MODEL_PATH = 'yolov8n.pt'
@@ -391,6 +397,9 @@ def main():
                         print(f"\n📡 백엔드 서버 ({SERVER_URL}) 연결 대기 중 (상태: STANDBY)...")
                         continue
             
+            # 젯슨나노 과열 방지 및 CPU 렉 완화를 위한 미세 딜레이 (약 60FPS 상한 제약)
+            time.sleep(0.015)
+
             # 'q' 키 누르면 수동 종료
             if cv2.waitKey(1) & 0xFF == ord('q'):
                 print("🛑 사용자에 의한 수동 종료.")
