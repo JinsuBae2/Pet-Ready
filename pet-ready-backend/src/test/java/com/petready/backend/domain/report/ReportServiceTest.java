@@ -72,12 +72,12 @@ public class ReportServiceTest {
         
         when(reportRepository.findByUserEmail(email)).thenReturn(Optional.of(testReport));
         when(geminiService.generateFeedback(
-                eq("테스터"), eq("준비된 활동가형"), eq(90), eq(0.95), eq(8), eq(10), eq(1), eq("푸들, 말티즈")
+                eq("테스터"), eq("준비된 활동가형"), eq(90), eq(0.95), eq(8), eq(10), eq(1), eq("푸들, 말티즈"), eq(5L), eq(80.0), eq(1L)
         )).thenReturn(expectedFeedback);
 
         // when
         String result = reportService.getOrGenerateAiFeedback(
-                email, analysisResult, 90, 0.95, 8, 10, 1
+                email, analysisResult, 90, 0.95, 8, 10, 1, 5L, 80.0, 1L
         );
 
         // then
@@ -86,7 +86,7 @@ public class ReportServiceTest {
         
         // Dirty checking 이외의 추가적인 JPA 보증을 위한 save 호출 검증
         verify(reportRepository, times(1)).save(testReport);
-        verify(geminiService, times(1)).generateFeedback(anyString(), anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyInt(), anyString());
+        verify(geminiService, times(1)).generateFeedback(anyString(), anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyInt(), anyString(), anyLong(), anyDouble(), anyLong());
     }
 
     @Test
@@ -112,14 +112,14 @@ public class ReportServiceTest {
 
         // when
         String result = reportService.getOrGenerateAiFeedback(
-                email, analysisResult, 90, 0.95, 8, 10, 1
+                email, analysisResult, 90, 0.95, 8, 10, 1, 5L, 80.0, 1L
         );
 
         // then
         assertThat(result).isEqualTo(cachedFeedback);
         
         // Gemini API가 절대 호출되지 않아야 함
-        verify(geminiService, never()).generateFeedback(anyString(), anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyInt(), anyString());
+        verify(geminiService, never()).generateFeedback(anyString(), anyString(), anyInt(), anyDouble(), anyInt(), anyInt(), anyInt(), anyString(), anyLong(), anyDouble(), anyLong());
         // 이미 캐시되어 있으므로 저장(save)도 수행하지 않음
         verify(reportRepository, never()).save(any(PetReport.class));
     }
@@ -135,12 +135,12 @@ public class ReportServiceTest {
         when(userRepository.findByEmail(email)).thenReturn(Optional.of(testUser));
         when(reportRepository.save(any(PetReport.class))).thenAnswer(invocation -> invocation.getArgument(0));
         when(geminiService.generateFeedback(
-                eq("테스터"), eq("준비된 활동가형"), eq(90), eq(0.95), eq(8), eq(10), eq(1), eq("푸들, 말티즈")
+                eq("테스터"), eq("준비된 활동가형"), eq(90), eq(0.95), eq(8), eq(10), eq(1), eq("푸들, 말티즈"), eq(5L), eq(80.0), eq(1L)
         )).thenReturn(expectedFeedback);
 
         // when
         String result = reportService.getOrGenerateAiFeedback(
-                email, analysisResult, 90, 0.95, 8, 10, 1
+                email, analysisResult, 90, 0.95, 8, 10, 1, 5L, 80.0, 1L
         );
 
         // then

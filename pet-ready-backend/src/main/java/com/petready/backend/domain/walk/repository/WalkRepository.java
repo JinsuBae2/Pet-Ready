@@ -17,4 +17,9 @@ public interface WalkRepository extends JpaRepository<Walk, Long> {
      * 특정 기기의 특정 기간 내 산책 기록 개수를 조회합니다.
      */
     long countByDeviceDeviceIdAndStartedAtBetween(String deviceId, java.time.LocalDateTime start, java.time.LocalDateTime end);
+
+    /**
+     * 특정 기기의 특정 시각 이후 산책 기록 목록을 조회합니다.
+     */
+    List<Walk> findAllByDeviceDeviceIdAndStartedAtAfter(String deviceId, java.time.LocalDateTime time);
 }

@@ -51,12 +51,14 @@ public class SecurityConfig {
             // 5. URL별 접근 권한 설정
             .authorizeHttpRequests(auth -> auth
                 // 헬스 체크, Swagger, 인증 관련 경로는 모두 허용
-                .requestMatchers("/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                .requestMatchers("/health", "/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/images/**").permitAll()
                 .requestMatchers("/api/v1/auth/**").permitAll()
                 // 테스트용 산책 API 접근 허용 (요청사항 반영)
                 .requestMatchers("/api/v1/walk/end").permitAll()
                 // 아두이노(기기) 통신용 API 인증 생략 (403 에러 방지)
                 .requestMatchers("/api/v1/pet/**").permitAll()
+                // 가상 훈련 도메인 API(제스처 감지 및 보상 처리) 인증 생략
+                .requestMatchers("/api/v1/training/**").permitAll()
                 // 푸시 알림 수동 테스트 API 허용
                 .requestMatchers("/api/v1/fcm/**").permitAll()
                 .requestMatchers("/api/v1/device/bark-event", "/api/v1/device/vision-event").permitAll()

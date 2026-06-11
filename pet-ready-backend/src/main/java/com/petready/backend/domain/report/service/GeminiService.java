@@ -36,15 +36,19 @@ public class GeminiService {
      * 사용자의 플레이 지표를 바탕으로 맞춤형 피드백을 생성합니다.
      * API Key가 없거나 호출에 실패하는 경우 안정적인 Fallback 문구를 반환합니다.
      */
-    public String generateFeedback(String userName, String userTypeLabel, int finalScore, double walkRatio, int completedMissions, int totalMissions, int sickCount, String breedExamples) {
+    /**
+     * 사용자의 플레이 지표를 바탕으로 맞춤형 피드백을 생성합니다.
+     * API Key가 없거나 호출에 실패하는 경우 안정적인 Fallback 문구를 반환합니다.
+     */
+    public String generateFeedback(String userName, String userTypeLabel, int finalScore, double walkRatio, int completedMissions, int totalMissions, int sickCount, String breedExamples, long totalTraining, double trainingSuccessRate, long confusedCount) {
         if (apiKey == null || apiKey.trim().isEmpty()) {
             log.warn("[Gemini API] API Key가 설정되지 않았습니다. 기본 Fallback 피드백을 제공합니다.");
-            return generateFallbackFeedback(userTypeLabel, finalScore, walkRatio, sickCount);
+            return generateFallbackFeedback(userTypeLabel, finalScore, walkRatio, sickCount, trainingSuccessRate);
         }
 
         try {
             // 1. 프롬프트 작성 (마크다운 기호 사용 절대 금지 규격 적용)
-            String prompt = buildPrompt(userName, userTypeLabel, finalScore, walkRatio, completedMissions, totalMissions, sickCount, breedExamples);
+            String prompt = buildPrompt(userName, userTypeLabel, finalScore, walkRatio, completedMissions, totalMissions, sickCount, breedExamples, totalTraining, trainingSuccessRate, confusedCount);
             
             // 2. Request Body 조립
             Map<String, Object> requestBody = new HashMap<>();
@@ -83,16 +87,16 @@ public class GeminiService {
             log.error("[Gemini API] 호출 중 에러가 발생했습니다. Error: {}", e.getMessage(), e);
         }
 
-        return generateFallbackFeedback(userTypeLabel, finalScore, walkRatio, sickCount);
+        return generateFallbackFeedback(userTypeLabel, finalScore, walkRatio, sickCount, trainingSuccessRate);
     }
 
     /**
      * 초개인화 프롬프트를 구성합니다. (마크다운 미사용 및 줄바꿈 Plain Text 강제 적용)
      */
-    private String buildPrompt(String userName, String userTypeLabel, int finalScore, double walkRatio, int completedMissions, int totalMissions, int sickCount, String breedExamples) {
+    private String buildPrompt(String userName, String userTypeLabel, int finalScore, double walkRatio, int completedMissions, int totalMissions, int sickCount, String breedExamples, long totalTraining, double trainingSuccessRate, long confusedCount) {
         StringBuilder sb = new StringBuilder();
         sb.append("당신은 전문 반려견 행동 분석사이자 유기동물 입양 카운슬러입니다.\n");
-        sb.append("제시된 사용자의 가상 반려견 양육 시뮬레이션 지표를 분석하여, 감성적이면서도 분석적인 종합 양육 평론 보고서를 작성해 주세요.\n\n");
+        sb.append("제시된 사용자의 가상 반려견 양육 및 훈련 시뮬레이션 지표를 분석하여, 감성적이면서도 분석적인 종합 양육 평론 보고서를 작성해 주세요.\n\n");
         
         sb.append("=== 사용자 지표 ===\n");
         sb.append("- 사용자 이름: ").append(userName).append("\n");
@@ -101,14 +105,17 @@ public class GeminiService {
         sb.append("- 산책 목표 달성률: ").append(Math.round(walkRatio * 100)).append("%\n");
         sb.append("- 돌봄 미션 수행: 총 ").append(totalMissions).append("회 중 ").append(completedMissions).append("회 성공\n");
         sb.append("- 방임(배터리 방전으로 반려견이 아팠던) 횟수: ").append(sickCount).append("회\n");
+        sb.append("- 총 훈련 시도 횟수: ").append(totalTraining).append("회\n");
+        sb.append("- 훈련 성공률: ").append(Math.round(trainingSuccessRate)).append("%\n");
+        sb.append("- 뇌정지 유발 횟수: ").append(confusedCount).append("회\n");
         sb.append("- 추천 견종 품종: ").append(breedExamples).append("\n\n");
 
         sb.append("=== 작성 지침 및 절대 제약사항 ===\n");
         sb.append("1. **(매우 중요) 절대 마크다운 기호(예: #, *, **, _, -, ` 등)를 사용하지 마세요.**\n");
         sb.append("2. 볼드 처리나 글머리 기호를 넣지 말고, 안드로이드 모바일 화면의 TextView에 바로 렌더링될 수 있는 순수한 평문(Plain Text)으로만 응답해야 합니다.\n");
         sb.append("3. 문단 구분이나 가독성이 필요하다면 마크다운 기호 대신 단순 줄바꿈(Enter) 문자만 사용하세요.\n");
-        sb.append("4. 사용자의 훌륭한 부분(예: 높은 산책율 등)에 대해서는 아낌없이 칭찬해 주세요.\n");
-        sb.append("5. 다만 부족한 부분(예: 방임 횟수 또는 느린 미션 속도 등)에 대해서는 실제 생명이었다면 방임이 되었을 것임을 차분하고 설득력 있게 경고하여 사회적 책임감을 심어주세요.\n");
+        sb.append("4. 사용자의 훈련 성과(시도 횟수, 성공률, 뇌정지 횟수)를 언급하며 이와 연관된 개성 넘치는 양육 칭호를 글 첫머리에 반드시 [칭호: XXX] 형태로 명시해 주세요. (예: [칭호: 댕댕이 소통의 신], [칭호: 뇌정지 마스터], [칭호: 방관형 양육자] 등)\n");
+        sb.append("5. 사용자의 훌륭한 돌봄에 대해서는 아낌없이 칭찬하되, 부족한 부분(예: 방임 횟수 또는 느린 미션 속도 등)에 대해서는 실제 생명이었다면 방임이 되었을 것임을 차분하고 설득력 있게 경고하여 사회적 책임감을 심어주세요.\n");
         sb.append("6. 마지막 문장은 추천된 품종인 [").append(breedExamples).append("]을(를) 실제 입양할 때의 현실적인 조언과 생명 존중을 격려하는 내용으로 마무리해 주세요.\n");
         sb.append("7. 친근하고 전문적인 한국어 구어체(~해 주세요, ~입니다)로 작성하며, 전체 길이는 3~4문장 내외로 간결하게 완성해 주세요.");
 
@@ -131,8 +138,10 @@ public class GeminiService {
     /**
      * API 장애 또는 키 미설정 시 반환할 유형별 기본 Fallback 피드백 텍스트입니다.
      */
-    private String generateFallbackFeedback(String userTypeLabel, int finalScore, double walkRatio, int sickCount) {
+    private String generateFallbackFeedback(String userTypeLabel, int finalScore, double walkRatio, int sickCount, double trainingSuccessRate) {
         StringBuilder sb = new StringBuilder();
+        String title = trainingSuccessRate >= 80.0 ? "[칭호: 댕댕이 소통의 신]" : "[칭호: 노력하는 동반자]";
+        sb.append(title).append("\n\n");
         sb.append("KOSIS 국가통계에 따르면 매년 약 10만 마리 이상의 구조동물이 발생하며, 이 중 20% 이상이 입양처를 찾지 못해 인도적으로 처리(안락사)됩니다. 유기 및 파양의 핵심 원인은 돌봄 부재와 행동 문제입니다.\n\n");
         
         sb.append("[판정 결과] ").append(userTypeLabel).append(" (최종 점수: ").append(finalScore).append("점)\n");
@@ -152,4 +161,5 @@ public class GeminiService {
         sb.append("\n생명을 집안에 맞이하기 전에 반려견과의 약속을 항상 1순위로 지킬 준비가 되어 있는지 다시 한번 되새겨 주시기 바랍니다.");
         return sb.toString();
     }
+
 }

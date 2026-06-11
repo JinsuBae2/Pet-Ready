@@ -184,13 +184,23 @@ public class RescueAnimalScheduler {
                     region = orgNm.split(" ")[0];
                 }
 
-                // 4. DB에 Upsert
+                // 4. 이미지 경로(popfile) 유효성 검증 및 Fallback 바인딩
+                String imageUrl = popfile;
+                boolean isFallback = false;
+                if (imageUrl == null || imageUrl.trim().isEmpty() || !imageUrl.startsWith("http")) {
+                    imageUrl = getBreedFallbackImage(breed);
+                    isFallback = true;
+                }
+
+                // 5. DB에 Upsert
                 final String finalSpecies = species;
                 final String finalBreed = breed;
                 final String finalRegion = region;
                 final LocalDate finalRescueDate = rescueDate;
                 final String finalAge = age;
                 final String finalCareNm = careNm;
+                final String finalImageUrl = imageUrl;
+                final boolean finalIsFallback = isFallback;
                 
                 boolean isNew = rescueAnimalCacheRepository.findByAnimalId(animalId).map(existing -> {
                     RescueAnimalCache updated = RescueAnimalCache.builder()
@@ -201,7 +211,8 @@ public class RescueAnimalScheduler {
                             .age(finalAge)
                             .shelterName(finalCareNm)
                             .region(finalRegion)
-                            .imageUrl(popfile)
+                            .imageUrl(finalImageUrl)
+                            .isFallback(finalIsFallback)
                             .rescueDate(finalRescueDate)
                             .cachedAt(LocalDateTime.now())
                             .build();
@@ -215,7 +226,8 @@ public class RescueAnimalScheduler {
                             .age(finalAge)
                             .shelterName(finalCareNm)
                             .region(finalRegion)
-                            .imageUrl(popfile)
+                            .imageUrl(finalImageUrl)
+                            .isFallback(finalIsFallback)
                             .rescueDate(finalRescueDate)
                             .cachedAt(LocalDateTime.now())
                             .build();
@@ -245,27 +257,27 @@ public class RescueAnimalScheduler {
         
         List<RescueAnimalCache> mockAnimals = new ArrayList<>();
         
-        mockAnimals.add(createMockAnimal("F01", "개", "골든리트리버", "2022(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1552053831-71594a27632d?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
-        mockAnimals.add(createMockAnimal("F02", "개", "라브라도리트리버", "2021(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1543466835-00a7907e9de1?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(2)));
-        mockAnimals.add(createMockAnimal("F03", "개", "비글", "2023(년생)", "인천동물보호소", "인천광역시", "https://images.unsplash.com/photo-1537151608828-ea2b117b6281?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(3)));
-        mockAnimals.add(createMockAnimal("F04", "개", "푸들", "2020(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1598133185553-c2f74d175b97?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
-        mockAnimals.add(createMockAnimal("F05", "개", "말티즈", "2022(년생)", "부산동물사랑보호센터", "부산광역시", "https://images.unsplash.com/photo-1507146426996-ef05306b995a?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(4)));
-        mockAnimals.add(createMockAnimal("F06", "개", "비숑프리제", "2023(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1608096299210-db7e38487075?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(5)));
-        mockAnimals.add(createMockAnimal("F07", "개", "시추", "2019(년생)", "강원유기동물쉼터", "강원특별자치도", "https://images.unsplash.com/photo-1518717758536-85ae29035b6d?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(2)));
-        mockAnimals.add(createMockAnimal("F08", "개", "포메라니안", "2024(년생)", "인천동물보호소", "인천광역시", "https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
-        mockAnimals.add(createMockAnimal("F09", "개", "시바이누", "2021(년생)", "충남유기견보호협회", "충청남도", "https://images.unsplash.com/photo-1583337130417-3346a1be7dee?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(6)));
-        mockAnimals.add(createMockAnimal("F10", "개", "진도개", "2020(년생)", "전남동물구호센터", "전라남도", "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(7)));
+        mockAnimals.add(createMockAnimal("F01", "개", "골든리트리버", "2022(년생)", "서울유기동물보호센터", "서울특별시", getBreedFallbackImage("골든리트리버"), LocalDate.now().minusDays(1)));
+        mockAnimals.add(createMockAnimal("F02", "개", "라브라도리트리버", "2021(년생)", "경기반려동물입양센터", "경기도", getBreedFallbackImage("라브라도리트리버"), LocalDate.now().minusDays(2)));
+        mockAnimals.add(createMockAnimal("F03", "개", "비글", "2023(년생)", "인천동물보호소", "인천광역시", getBreedFallbackImage("비글"), LocalDate.now().minusDays(3)));
+        mockAnimals.add(createMockAnimal("F04", "개", "푸들", "2020(년생)", "서울유기동물보호센터", "서울특별시", getBreedFallbackImage("푸들"), LocalDate.now().minusDays(1)));
+        mockAnimals.add(createMockAnimal("F05", "개", "말티즈", "2022(년생)", "부산동물사랑보호센터", "부산광역시", getBreedFallbackImage("말티즈"), LocalDate.now().minusDays(4)));
+        mockAnimals.add(createMockAnimal("F06", "개", "비숑프리제", "2023(년생)", "경기반려동물입양센터", "경기도", getBreedFallbackImage("비숑프리제"), LocalDate.now().minusDays(5)));
+        mockAnimals.add(createMockAnimal("F07", "개", "시추", "2019(년생)", "강원유기동물쉼터", "강원특별자치도", getBreedFallbackImage("시추"), LocalDate.now().minusDays(2)));
+        mockAnimals.add(createMockAnimal("F08", "개", "포메라니안", "2024(년생)", "인천동물보호소", "인천광역시", getBreedFallbackImage("포메라니안"), LocalDate.now().minusDays(1)));
+        mockAnimals.add(createMockAnimal("F09", "개", "시바이누", "2021(년생)", "충남유기견보호협회", "충청남도", getBreedFallbackImage("시바이누"), LocalDate.now().minusDays(6)));
+        mockAnimals.add(createMockAnimal("F10", "개", "진도개", "2020(년생)", "전남동물구호센터", "전라남도", getBreedFallbackImage("진도개"), LocalDate.now().minusDays(7)));
         
-        mockAnimals.add(createMockAnimal("F11", "개", "치와와", "2022(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
-        mockAnimals.add(createMockAnimal("F12", "개", "웰시코기", "2021(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1612536057832-2ff7eed58194?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(2)));
-        mockAnimals.add(createMockAnimal("F13", "개", "닥스훈트", "2023(년생)", "인천동물보호소", "인천광역시", "https://images.unsplash.com/photo-1503256207526-0d5d80fa2f47?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(3)));
-        mockAnimals.add(createMockAnimal("F14", "개", "퍼그", "2022(년생)", "경북동물구조협회", "경상북도", "https://images.unsplash.com/photo-1517849845537-4d257902454a?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(4)));
-        mockAnimals.add(createMockAnimal("F15", "개", "웰시코기", "2021(년생)", "충남유기견보호협회", "충청남도", "https://images.unsplash.com/photo-1612536057832-2ff7eed58194?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(5)));
-        mockAnimals.add(createMockAnimal("F16", "개", "믹스견", "2023(년생)", "전남동물구호센터", "전라남도", "https://images.unsplash.com/photo-1561037404-61cd46aa615b?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(6)));
-        mockAnimals.add(createMockAnimal("F17", "개", "요크셔테리어", "2020(년생)", "부산동물사랑보호센터", "부산광역시", "https://images.unsplash.com/photo-1587300003388-59208cc962cb?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(3)));
-        mockAnimals.add(createMockAnimal("F18", "개", "치와와", "2022(년생)", "서울유기동물보호센터", "서울특별시", "https://images.unsplash.com/photo-1548199973-03cce0bbc87b?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(1)));
-        mockAnimals.add(createMockAnimal("F19", "개", "닥스훈트", "2021(년생)", "경기반려동물입양센터", "경기도", "https://images.unsplash.com/photo-1503256207526-0d5d80fa2f47?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(8)));
-        mockAnimals.add(createMockAnimal("F20", "개", "진도개", "2022(년생)", "부산동물사랑보호센터", "부산광역시", "https://images.unsplash.com/photo-1601758228041-f3b2795255f1?auto=format&fit=crop&q=80&w=400", LocalDate.now().minusDays(4)));
+        mockAnimals.add(createMockAnimal("F11", "개", "치와와", "2022(년생)", "서울유기동물보호센터", "서울특별시", getBreedFallbackImage("치와와"), LocalDate.now().minusDays(1)));
+        mockAnimals.add(createMockAnimal("F12", "개", "웰시코기", "2021(년생)", "경기반려동물입양센터", "경기도", getBreedFallbackImage("웰시코기"), LocalDate.now().minusDays(2)));
+        mockAnimals.add(createMockAnimal("F13", "개", "닥스훈트", "2023(년생)", "인천동물보호소", "인천광역시", getBreedFallbackImage("닥스훈트"), LocalDate.now().minusDays(3)));
+        mockAnimals.add(createMockAnimal("F14", "개", "퍼그", "2022(년생)", "경북동물구조협회", "경상북도", getBreedFallbackImage("퍼그"), LocalDate.now().minusDays(4)));
+        mockAnimals.add(createMockAnimal("F15", "개", "웰시코기", "2021(년생)", "충남유기견보호협회", "충청남도", getBreedFallbackImage("웰시코기"), LocalDate.now().minusDays(5)));
+        mockAnimals.add(createMockAnimal("F16", "개", "믹스견", "2023(년생)", "전남동물구호센터", "전라남도", getBreedFallbackImage("믹스견"), LocalDate.now().minusDays(6)));
+        mockAnimals.add(createMockAnimal("F17", "개", "요크셔테리어", "2020(년생)", "부산동물사랑보호센터", "부산광역시", getBreedFallbackImage("요크셔테리어"), LocalDate.now().minusDays(3)));
+        mockAnimals.add(createMockAnimal("F18", "개", "치와와", "2022(년생)", "서울유기동물보호센터", "서울특별시", getBreedFallbackImage("치와와"), LocalDate.now().minusDays(1)));
+        mockAnimals.add(createMockAnimal("F19", "개", "닥스훈트", "2021(년생)", "경기반려동물입양센터", "경기도", getBreedFallbackImage("닥스훈트"), LocalDate.now().minusDays(8)));
+        mockAnimals.add(createMockAnimal("F20", "개", "진도개", "2022(년생)", "부산동물사랑보호센터", "부산광역시", getBreedFallbackImage("진도개"), LocalDate.now().minusDays(4)));
 
         for (RescueAnimalCache mock : mockAnimals) {
             if (!rescueAnimalCacheRepository.existsByAnimalId(mock.getAnimalId())) {
@@ -285,8 +297,35 @@ public class RescueAnimalScheduler {
                 .shelterName(shelterName)
                 .region(region)
                 .imageUrl(imageUrl)
+                .isFallback(true) // Mock 데이터는 무조건 fallback 이미지
                 .rescueDate(rescueDate)
                 .cachedAt(LocalDateTime.now())
                 .build();
+    }
+
+    /**
+     * 품종명을 분석하여 미리 백엔드 정적 리소스에 저장한 오프라인 Fallback 이미지 URL을 반환합니다.
+     * 공공 API 문자열에서 다양한 조건(contains)을 유연하게 수용합니다.
+     */
+    private String getBreedFallbackImage(String breed) {
+        String baseUrl = "http://localhost:8080";
+        if (breed == null || breed.trim().isEmpty()) {
+            return baseUrl + "/images/fallback/mix.png";
+        }
+        
+        String cleanBreed = breed.replaceAll("\\s+", "").toLowerCase();
+        
+        if (cleanBreed.contains("푸들")) {
+            return baseUrl + "/images/fallback/poodle.png";
+        } else if (cleanBreed.contains("진도")) {
+            return baseUrl + "/images/fallback/jindo.png";
+        } else if (cleanBreed.contains("리트리버") || cleanBreed.contains("라브라도")) {
+            return baseUrl + "/images/fallback/retriever.png";
+        } else if (cleanBreed.contains("말티즈")) {
+            return baseUrl + "/images/fallback/maltese.png";
+        }
+        
+        // 그 외 매칭되지 않거나 믹스견은 기본 믹스견 이미지 반환
+        return baseUrl + "/images/fallback/mix.png";
     }
 }

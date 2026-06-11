@@ -116,6 +116,20 @@ public class Device extends BaseEntity {
     private Boolean bowlDetected = false;
 
     /**
+     * 가상 반려견 상태 관리를 위한 평상시 상태 유형
+     */
+    @Builder.Default
+    @Enumerated(EnumType.STRING)
+    @Column(name = "routine_status", nullable = false, length = 50)
+    private RoutineStatus routineStatus = RoutineStatus.HAPPY;
+
+    /**
+     * 마지막 급여 완료 시각
+     */
+    @Column(name = "last_feed_time")
+    private LocalDateTime lastFeedTime;
+
+    /**
      * 굶김 횟수를 1 증가시킵니다.
      */
     public void incrementSickCount() {
@@ -129,6 +143,19 @@ public class Device extends BaseEntity {
 
     public void updateBowlDetected(boolean detected) {
         this.bowlDetected = detected;
+        if (detected) {
+            this.lastFeedTime = LocalDateTime.now();
+        }
+    }
+
+    public void updateRoutineStatus(RoutineStatus status) {
+        if (status != null) {
+            this.routineStatus = status;
+        }
+    }
+
+    public void updateLastFeedTime(LocalDateTime feedTime) {
+        this.lastFeedTime = feedTime;
     }
 
     public void resetFeedingLock() {

@@ -30,7 +30,7 @@ public class ReportService {
      * Dirty Checking이 정상 작동하도록 @Transactional 내에서 연산이 이루어집니다.
      */
     @Transactional
-    public String getOrGenerateAiFeedback(String email, UserAnalysisResult analysisResult, int finalScore, double walkRatio, int completedMissions, int totalMissions, int sickCount) {
+    public String getOrGenerateAiFeedback(String email, UserAnalysisResult analysisResult, int finalScore, double walkRatio, int completedMissions, int totalMissions, int sickCount, long totalTraining, double trainingSuccessRate, long confusedCount) {
         // 1. 유저의 PetReport 조회 (없을 시 H2 테스트 환경 등을 고려해 자동 생성 처리 방어)
         PetReport report = reportRepository.findByUserEmail(email)
                 .orElseGet(() -> {
@@ -70,7 +70,10 @@ public class ReportService {
                 completedMissions,
                 totalMissions,
                 sickCount,
-                analysisResult.getBreedExamples()
+                analysisResult.getBreedExamples(),
+                totalTraining,
+                trainingSuccessRate,
+                confusedCount
         );
 
         // 4. Dirty Checking 및 명시적 저장(테스트 Mocking 검증 호환)을 통해 변경 사항을 DB에 영속화
@@ -81,4 +84,5 @@ public class ReportService {
 
         return generatedFeedback;
     }
+
 }

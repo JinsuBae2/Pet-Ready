@@ -27,3 +27,9 @@ HELP.md
 # Firebase Credentials
 pet-ready-serviceAccountKey.json
 *serviceAccountKey.json
+
+# Local simulation files & models
+yolov8n.pt
+*.pdf
+demo_report.html
+scratch_api_test.sh

@@ -37,12 +37,10 @@ public class PetCommunicationService {
     private final com.petready.backend.domain.score.service.ScoreService scoreService;
     private final com.petready.backend.domain.mission.repository.MissionRepository missionRepository;
     private final com.petready.backend.domain.score.repository.ScoreEventRepository scoreEventRepository;
+    private final com.petready.backend.domain.mission.service.TrainingService trainingService;
 
     /**
-     * 로봇 기기로부터 실시간 센서 상태 로그를 수신하고 시뮬레이터 가상 배터리 감소를 계산하여 적재합니다.
-     * 
-     * @param request 아두이노 기기 센서 데이터
-     * @return 펫의 분석된 기분 및 LED 상태
+     * 로봇 기기 센서 데이터를 처리하고 온라인 상태를 관리합니다.
      */
     @Transactional
     public PetStatusResponse receiveStatus(PetStatusRequest request) {
@@ -245,7 +243,7 @@ public class PetCommunicationService {
             }
         }
 
-        // 4. 활성화된 미션 존재 여부에 따라 LED 색상 결정 (RED: 미션 진행중 / GREEN: 대기상태)
+        // 4. LED 색상 및 LCD 정보 결정
         boolean hasActiveMission = missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
                 device.getDeviceId(), NotificationType.BARKING.name()).isPresent()
                 || missionRepository.findFirstByDeviceDeviceIdAndTypeAndIsCompletedFalseOrderByIssuedAtDesc(
@@ -253,16 +251,91 @@ public class PetCommunicationService {
         
         String ledColor = (hasActiveMission || isHungry) ? "RED" : "GREEN";
 
+        // ----------------------------------------------------
+        // [우선순위 1] 3초 락아웃 훈련 결과 연출
+        // ----------------------------------------------------
+        com.petready.backend.domain.mission.service.TrainingService.TrainingResultInfo trainingResult =
+                trainingService.getPendingTrainingResult(device.getDeviceId());
+
+        String lcdCommand;
+        String lcdLine1;
+        String lcdLine2;
+
+        if (trainingResult != null) {
+            mood = trainingResult.getStatus();
+            lcdCommand = trainingResult.getLcdCommand();
+            lcdLine1 = trainingResult.getLcdLine1();
+            lcdLine2 = trainingResult.getLcdLine2();
+            ledColor = trainingResult.getLedColor();
+            message = "훈련 피드백 연출 (" + mood + ") 최우선 표출 중 (3초 고정)";
+        } else {
+            // [우선순위 2] 평상시 가상 반려견 상태 에코시스템
+            com.petready.backend.domain.device.entity.RoutineStatus routine = device.getRoutineStatus();
+            if (routine == null) {
+                routine = com.petready.backend.domain.device.entity.RoutineStatus.HAPPY;
+            }
+
+            switch (routine) {
+                case SLEEPING:
+                    lcdCommand = "LCD_SLEEPING";
+                    lcdLine1 = "[ZZZ... SLEEPING]";
+                    lcdLine2 = "DOG:  ( u _ u )";
+                    ledColor = "GREEN";
+                    mood = "SLEEPING";
+                    break;
+                case HUNGRY:
+                    lcdCommand = "LCD_HUNGRY";
+                    lcdLine1 = "[ FEED ME NOW! ]";
+                    lcdLine2 = "DOG:  ( º ﹃ º )";
+                    ledColor = "RED";
+                    mood = "HUNGRY";
+                    break;
+                case BARKING:
+                    lcdCommand = "LCD_BARKING";
+                    lcdLine1 = "[BARKING STOP ME]";
+                    lcdLine2 = "DOG:  ( > O < )!";
+                    ledColor = "RED";
+                    mood = "BARKING";
+                    break;
+                case SICK:
+                    lcdCommand = "LCD_SICK";
+                    lcdLine1 = "[   I M SICK   ]";
+                    lcdLine2 = "DOG:  ( ㅠ _ ㅠ )";
+                    ledColor = "RED";
+                    mood = "SICK";
+                    break;
+                case BORED:
+                    lcdCommand = "LCD_BORED";
+                    lcdLine1 = "[    IM BORED  ]";
+                    lcdLine2 = "DOG:  ( ㅡ . ㅡ )";
+                    ledColor = "GREEN";
+                    mood = "BORED";
+                    break;
+                case HAPPY:
+                default:
+                    lcdCommand = "LCD_HAPPY";
+                    lcdLine1 = "[   SO HAPPY   ]";
+                    lcdLine2 = "DOG:  ( ≧ ▽ ≦ )";
+                    ledColor = "GREEN";
+                    mood = "HAPPY";
+                    break;
+            }
+        }
+
         return PetStatusResponse.builder()
                 .isHungry(isHungry)
                 .mood(mood)
                 .healthStatus(healthStatus)
                 .analysisMessage(message)
                 .ledColor(ledColor)
+                .lcdCommand(lcdCommand)
+                .lcdTextLine1(lcdLine1)
+                .lcdTextLine2(lcdLine2)
                 .build();
     }
 
     /**
+
      * 사용자가 앱 터치로 밥 주기를 수행했을 때 호출하여 플래그를 세팅하고 크로스 체크를 수행합니다. (BK-03)
      */
     @Transactional

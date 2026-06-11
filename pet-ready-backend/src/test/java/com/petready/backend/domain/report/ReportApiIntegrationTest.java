@@ -163,8 +163,9 @@ public class ReportApiIntegrationTest {
                 .andDo(print())
                 .andExpect(status().isOk())
                 // 기본 성적 통계 검증
-                .andExpect(jsonPath("$.finalScore", is(95)))
+                .andExpect(jsonPath("$.finalScore", is(100)))
                 .andExpect(jsonPath("$.grade", is("A+")))
+
                 .andExpect(jsonPath("$.walkScore", is(100)))
                 .andExpect(jsonPath("$.responseScore", is(100)))
                 .andExpect(jsonPath("$.healthPenalty", is(0)))
@@ -175,7 +176,7 @@ public class ReportApiIntegrationTest {
                 .andExpect(jsonPath("$.userTypeLabel", is("준비된 활동가형")))
                 .andExpect(jsonPath("$.breedRecommendation.type", is("대형견 / 활동견")))
                 .andExpect(jsonPath("$.breedRecommendation.examples", containsString("골든리트리버")))
-                .andExpect(jsonPath("$.contextMessage", containsString("KOSIS 국가통계")))
+                .andExpect(jsonPath("$.contextMessage", containsString("칭호")))
                 // 실시간 구조견 추천 검증 (골든리트리버 1건이 매칭되어 노출)
                 .andExpect(jsonPath("$.recommendedAnimals", hasSize(greaterThanOrEqualTo(1))))
                 .andExpect(jsonPath("$.recommendedAnimals[0].breed", is("골든리트리버")))

@@ -51,6 +51,10 @@ public class RescueAnimalCache {
     @Column(name = "image_url", length = 500)
     private String imageUrl;
 
+    // 대체 이미지 여부 (실제 공공 API 이미지가 누락되어 로컬 Fallback 이미지를 사용했는지 여부)
+    @Column(name = "is_fallback")
+    private Boolean isFallback;
+
     // 구조 일자
     @Column(name = "rescue_date")
     private LocalDate rescueDate;

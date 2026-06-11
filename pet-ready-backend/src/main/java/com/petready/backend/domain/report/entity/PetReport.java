@@ -85,9 +85,15 @@ public class PetReport extends BaseEntity {
         this.aiFeedback = aiFeedback;
     }
     
+    public void updateScoreAndGrade(BigDecimal score, String grade) {
+        this.totalScore = score;
+        this.grade = grade;
+    }
+    
     public void incrementWalkCount() {
         this.totalWalkCount++;
     }
+
     
     public void incrementMissionCount() {
         this.totalMissionCount++;

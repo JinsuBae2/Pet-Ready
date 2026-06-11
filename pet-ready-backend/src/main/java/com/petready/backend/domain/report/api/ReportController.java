@@ -53,6 +53,7 @@ public class ReportController {
     private final RealTimeScoreRepository realTimeScoreRepository;
     private final PetReportRepository reportRepository;
     private final RescueAnimalCacheRepository rescueAnimalCacheRepository;
+    private final com.petready.backend.domain.mission.repository.TrainingLogRepository trainingLogRepository;
 
     /**
      * 사용자의 최종 양육 리포트와 개인별 맞춤 유기견 리스트를 융합하여 가져옵니다.
@@ -74,22 +75,14 @@ public class ReportController {
         // 1. 최신 시뮬레이션 통계를 기준으로 Weka AI 분석을 재수행하여 유형 및 추천 품종을 갱신합니다. (BK-13)
         UserAnalysisResult analysisResult = analysisService.performAnalysis(email);
 
-        // 2. 기기 및 실시간 점수를 조회합니다.
+        // 2. 기기 및 훈련 로그를 조회하여 5:5 비율 종합 양육 점수를 계산합니다.
         Device device = deviceRepository.findByUserEmail(email)
                 .orElseThrow(() -> new IllegalArgumentException("해당 유저에게 등록된 기기가 없습니다."));
-        
-        RealTimeScore realTimeScore = realTimeScoreRepository.findById(device.getDeviceId())
-                .orElseGet(() -> RealTimeScore.builder()
-                        .device(device)
-                        .currentScore(100)
-                        .build());
-        
-        int finalScore = realTimeScore.getCurrentScore();
 
-        // 3. 누적 산책 및 미션 데이터를 활용해 세부 성적표 지표들을 빌드합니다.
+        // 2-1. 돌봄 달성도 점수 계산 (산책 + 미션 반응 비율)
         List<Walk> walks = walkRepository.findAllByUserEmail(email);
         List<Mission> missions = missionRepository.findAllByDeviceUserEmail(email);
-        
+
         // 산책 점수 정산: 실제 총 거리와 설정 목표 거리의 백분율 비율로 변환 (최대 100점 클램핑)
         double totalActualWalk = walks.stream().mapToDouble(w -> w.getDistanceKm().doubleValue()).sum();
         double totalGoalWalk = walks.stream().mapToDouble(w -> w.getWalkGoalKm().doubleValue()).sum();
@@ -103,6 +96,41 @@ public class ReportController {
         // 건강 벌점 정산: 배터리 방전(아픔 횟수) 당 15점씩 패널티를 계산
         int healthPenalty = device.getSickCount() * 15;
 
+        // 돌봄 점수 = Math.max(0, ((walkScore + responseScore) / 2.0) - healthPenalty)
+        double careScore = Math.max(0, ((walkScore + responseScore) / 2.0) - healthPenalty);
+
+        // 2-2. 가상 훈련 점수 계산 (100 - CONFUSED*5 - SAD*10)
+        long confusedCount = trainingLogRepository.countByDeviceDeviceIdAndStatus(device.getDeviceId(), "CONFUSED");
+        long sadCount = trainingLogRepository.countByDeviceDeviceIdAndStatus(device.getDeviceId(), "SAD");
+        long successCount = trainingLogRepository.countByDeviceDeviceIdAndStatus(device.getDeviceId(), "SUCCESS");
+        long totalTraining = trainingLogRepository.countByDeviceDeviceId(device.getDeviceId());
+        
+        double trainScore = Math.max(0, 100 - (confusedCount * 5) - (sadCount * 10));
+
+        // 2-3. 최종 종합 점수 산출 (돌봄 50% + 훈련 50%), 0점 이하 클램핑 및 DB 영속화 반영
+        int computedScore = (int) Math.round((careScore * 0.5) + (trainScore * 0.5));
+        final int finalScore = Math.max(0, computedScore);
+        String grade = determineGrade(finalScore);
+
+        // PetReport 테이블에 total_score 및 grade 업데이트 반영
+        PetReport report = reportRepository.findByUserEmail(email)
+                .orElseGet(() -> {
+                    com.petready.backend.domain.user.entity.User user = device.getUser();
+                    PetReport newReport = PetReport.builder()
+                            .user(user)
+                            .totalScore(BigDecimal.valueOf(finalScore))
+                            .grade(grade)
+                            .totalReceiptAmount(0L)
+                            .receiptDetailsJson("[]")
+                            .totalWalkCount(walks.size())
+                            .totalMissionCount(missions.size())
+                            .build();
+                    return reportRepository.save(newReport);
+                });
+        report.updateScoreAndGrade(BigDecimal.valueOf(finalScore), grade);
+        reportRepository.save(report);
+
+        // 3. 누적 데이터를 활용해 세부 성적표 지표들을 빌드합니다.
         // 평균 응답 시간 정산: 미션 완료 데이터의 초 단위 응답 속도 평균값 도출
         long respondedCount = missions.stream()
                 .filter(m -> m.getIsCompleted() && m.getResponseTimeSec() != null)
@@ -117,19 +145,15 @@ public class ReportController {
         }
 
         // 총 가상 누적 영수증 금액을 가져옵니다.
-        int totalMedicalFee = reportRepository.findByUserEmail(email)
-                .map(PetReport::getTotalReceiptAmount)
-                .orElse(0L)
-                .intValue();
-
-        // 실시간 점수 일원화 등급 판정 수행 (A+ ~ F) (BK-08)
-        String grade = determineGrade(finalScore);
+        int totalMedicalFee = report.getTotalReceiptAmount().intValue();
 
         // 4. 추천 품종에 잘 부합하는 실물 유기견 리스트 최대 5건을 캐시 테이블에서 매칭 및 추출합니다. (BK-10/BK-12)
         List<FinalReportResponse.RecommendedAnimalDto> recommendedAnimals = matchRescueAnimals(analysisResult);
 
         // 5. 생성형 AI 피드백을 Lazy Caching하여 융합합니다.
         double walkRatio = totalGoalWalk == 0 ? 0.0 : totalActualWalk / totalGoalWalk;
+        double trainingSuccessRate = totalTraining == 0 ? 100.0 : ((double) successCount / totalTraining) * 100.0;
+        
         String aiFeedback = reportService.getOrGenerateAiFeedback(
                 email,
                 analysisResult,
@@ -137,7 +161,10 @@ public class ReportController {
                 walkRatio,
                 (int) completedMissions,
                 (int) totalMissions,
-                device.getSickCount()
+                device.getSickCount(),
+                totalTraining,
+                trainingSuccessRate,
+                confusedCount
         );
 
         // 6. 응답 JSON 조립 및 반환 처리를 수행합니다.
@@ -228,6 +255,7 @@ public class ReportController {
                             .shelterName(animal.getShelterName())
                             .region(animal.getRegion())
                             .imageUrl(animal.getImageUrl())
+                            .isFallback(animal.getIsFallback() != null && animal.getIsFallback())
                             .matchReason(matchReason)
                             .build();
                 })

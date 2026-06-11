@@ -68,6 +68,7 @@ public class FinalReportResponse {
         private String shelterName;
         private String region;
         private String imageUrl;
+        private Boolean isFallback;
         private String matchReason;
     }
 }

@@ -33,7 +33,21 @@ public class PetCommunicationController {
      */
     @Operation(
         summary = "하드웨어 상태 수신 API (ESP32 -> 서버)", 
-        description = "로봇 기기가 30초 주기로 호출합니다. 머리/등 터치 센서 상태와 가상 배터리 감쇄 시뮬레이션 수치를 전달받아 펫의 감정(NORMAL, HAPPY), 건강 상태(GOOD, WARNING) 및 LED 출력 색상(GREEN, RED)을 결정하여 반환합니다."
+        description = "◆ 아두이노(ESP32) 및 안드로이드 연동 가이드:\n" +
+                      "1. **상시 가상 반려견 디스플레이 연동**:\n" +
+                      "   * 본 API 응답 바디에 새롭게 추가된 `lcdCommand`, `lcdTextLine1`, `lcdTextLine2`, `ledColor`를 파싱하여 실시간으로 물리적 기기를 업데이트해야 합니다.\n" +
+                      "   * **평상시 6가지 반려견 상태**:\n" +
+                      "     - SLEEPING: [ZZZ... SLEEPING] / DOG:  ( u _ u ) (LED: GREEN)\n" +
+                      "     - HUNGRY: [ FEED ME NOW! ] / DOG:  ( º ﹃ º ) (LED: RED)\n" +
+                      "     - BARKING: [BARKING STOP ME] / DOG:  ( > O < )! (LED: RED)\n" +
+                      "     - SICK: [   I M SICK   ] / DOG:  ( ㅠ _ ㅠ ) (LED: RED)\n" +
+                      "     - HAPPY: [   SO HAPPY   ] / DOG:  ( ≧ ▽ ≦ ) (LED: GREEN)\n" +
+                      "     - BORED: [    IM BORED  ] / DOG:  ( ㅡ . ㅡ ) (LED: GREEN)\n" +
+                      "2. **훈련 3초 락아웃 룰 우선순위 제어**:\n" +
+                      "   * 본 API 폴링 시, 서버에서 최근 3초 이내에 훈련 결과(SUCCESS, CONFUSED, SAD)가 발생했다면 평상시 상태 대신 훈련 결과 연출 텍스트와 LED 제어 신호가 최우선 반환됩니다.\n" +
+                      "   * 기기/앱은 특별히 별도의 화면 전환을 개발할 필요 없이, 본 API의 응답을 그대로 화면과 LED에 매핑만 해주면 락아웃이 끝난 후 평상시 상태로 자동 복귀됩니다.\n" +
+                      "3. **밥그릇 인식 시 급여 시간 동기화**:\n" +
+                      "   * 젯슨나노를 통해 실물 밥그릇 감지 성공 시, 백엔드 단에서 자동으로 `lastFeedTime`이 현재 시각으로 갱신되므로 기기의 배고픔(HUNGRY) 상태 해소 및 배터리 충전이 연동됩니다."
     )
     @ApiResponses(value = {
         @ApiResponse(responseCode = "200", description = "상태 분석 결과 정상 반환 완료"),
@@ -44,6 +58,7 @@ public class PetCommunicationController {
         // 서비스 단으로 상태 데이터를 넘겨 분석 결과를 수집하고 반환합니다.
         return ResponseEntity.ok(communicationService.receiveStatus(request));
     }
+
 
     /**
      * 사용자가 앱 터치로 밥 주기를 수행했을 때 호출하는 API입니다. 

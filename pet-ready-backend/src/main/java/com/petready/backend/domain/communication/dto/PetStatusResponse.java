@@ -7,7 +7,7 @@ import lombok.Getter;
 
 /**
  * 수신된 상태를 분석하여 응답하는 DTO입니다.
- * 배고픔, 기분, 건강 상태 등의 분석 결과가 포함됩니다.
+ * 배고픔, 기분, 건강 상태 및 LCD/LED 기기 제어 피드백이 포함됩니다.
  */
 @Getter
 @Builder
@@ -29,4 +29,14 @@ public class PetStatusResponse {
 
     @Schema(description = "상태 확인 LED 색상 (GREEN, RED)", example = "GREEN")
     private String ledColor;
+
+    @Schema(description = "하드웨어 16x2 LCD 출력용 식별 명령", example = "LCD_HAPPY")
+    private String lcdCommand;
+
+    @Schema(description = "하드웨어 16x2 LCD 첫 번째 행 아스키 텍스트", example = "[   SO HAPPY   ]")
+    private String lcdTextLine1;
+
+    @Schema(description = "하드웨어 16x2 LCD 두 번째 행 아스키 텍스트", example = "DOG:  ( ≧ ▽ ≦ )")
+    private String lcdTextLine2;
 }
+
