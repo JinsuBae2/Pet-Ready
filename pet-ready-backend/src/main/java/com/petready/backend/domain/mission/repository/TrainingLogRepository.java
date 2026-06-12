@@ -4,6 +4,10 @@ import com.petready.backend.domain.mission.entity.TrainingLog;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.petready.backend.domain.device.entity.Device;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 /**
@@ -11,6 +15,13 @@ import java.util.List;
  */
 @Repository
 public interface TrainingLogRepository extends JpaRepository<TrainingLog, Long> {
+    /**
+     * 특정 기기와 연관된 모든 가상 훈련 기록을 일괄 삭제합니다.
+     */
+    @Modifying
+    @Query("delete from TrainingLog t where t.device = :device")
+    void deleteAllByDevice(@Param("device") Device device);
+
 
     /**
      * 특정 기기에 등록된 전체 훈련 로그를 반환합니다.

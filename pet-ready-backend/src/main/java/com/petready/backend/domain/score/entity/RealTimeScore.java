@@ -47,11 +47,6 @@ public class RealTimeScore {
         this.lastUpdatedAt = LocalDateTime.now();
     }
 
-    /**
-     * 점수를 가감하고 0~100 범위로 클램핑(제한)합니다.
-     * 
-     * @param delta 변동할 점수 (양수 또는 음수)
-     */
     public void applyScoreDelta(int delta) {
         this.currentScore += delta;
         if (this.currentScore < 0) {
@@ -59,5 +54,13 @@ public class RealTimeScore {
         } else if (this.currentScore > 100) {
             this.currentScore = 100;
         }
+    }
+
+    /**
+     * 점수를 100점으로 초기화하고 수정 시각을 갱신합니다.
+     */
+    public void resetScoreToMax() {
+        this.currentScore = 100;
+        this.lastUpdatedAt = LocalDateTime.now();
     }
 }

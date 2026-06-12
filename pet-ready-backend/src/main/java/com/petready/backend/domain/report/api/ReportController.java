@@ -25,7 +25,9 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
+import com.petready.backend.domain.user.service.ResetService;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -54,6 +56,7 @@ public class ReportController {
     private final PetReportRepository reportRepository;
     private final RescueAnimalCacheRepository rescueAnimalCacheRepository;
     private final com.petready.backend.domain.mission.repository.TrainingLogRepository trainingLogRepository;
+    private final ResetService resetService;
 
     /**
      * 사용자의 최종 양육 리포트와 개인별 맞춤 유기견 리스트를 융합하여 가져옵니다.
@@ -260,5 +263,27 @@ public class ReportController {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 사용자의 모든 양육 시뮬레이션 관련 지표 데이터를 데이터베이스에서 초기화합니다.
+     */
+    @Operation(
+        summary = "시뮬레이션 데이터 초기화 API",
+        description = "사용자의 산책, 미션 반응, 가상 훈련 기록을 초기화하고 실시간 점수와 아픔 횟수를 셋업 초기 상태로 재설정합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "시뮬레이션 초기화 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 토큰 누락 또는 유효 만료 상태"),
+        @ApiResponse(responseCode = "500", description = "서버 내부 처리 오류")
+    })
+    @PostMapping("/reset")
+    public ResponseEntity<Void> resetSimulation(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        log.info("[시뮬레이션 초기화 API 호출] 사용자 이메일: {}", email);
+        
+        resetService.resetSimulation(email);
+        
+        return ResponseEntity.ok().build();
     }
 }

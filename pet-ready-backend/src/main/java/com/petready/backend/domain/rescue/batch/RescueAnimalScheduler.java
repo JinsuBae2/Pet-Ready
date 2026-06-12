@@ -308,7 +308,7 @@ public class RescueAnimalScheduler {
      * 공공 API 문자열에서 다양한 조건(contains)을 유연하게 수용합니다.
      */
     private String getBreedFallbackImage(String breed) {
-        String baseUrl = "http://localhost:8080";
+        String baseUrl = "http://220.67.0.11:8080";
         if (breed == null || breed.trim().isEmpty()) {
             return baseUrl + "/images/fallback/mix.png";
         }

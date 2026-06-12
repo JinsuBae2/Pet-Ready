@@ -162,4 +162,12 @@ public class Device extends BaseEntity {
         this.appFeedClicked = false;
         this.bowlDetected = false;
     }
+
+    /**
+     * 굶김 횟수(아픔 횟수) 및 마지막 방전 패널티 시각을 초기화합니다.
+     */
+    public void resetSickCount() {
+        this.sickCount = 0;
+        this.lastDischargePenaltyAt = null;
+    }
 }

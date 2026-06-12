@@ -4,6 +4,7 @@ import com.petready.backend.domain.analysis.entity.UserAnalysisResult;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.petready.backend.domain.user.entity.User;
 import java.util.Optional;
 
 /**
@@ -11,6 +12,11 @@ import java.util.Optional;
  */
 @Repository
 public interface UserAnalysisResultRepository extends JpaRepository<UserAnalysisResult, Long> {
+
+    /**
+     * 특정 사용자의 분석 결과를 삭제합니다.
+     */
+    void deleteByUser(User user);
 
     /**
      * 사용자의 이메일을 기준으로 가장 최근에 수행된 분석 결과를 조회합니다.

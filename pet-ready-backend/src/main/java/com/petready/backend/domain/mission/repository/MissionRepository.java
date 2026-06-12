@@ -4,6 +4,10 @@ import com.petready.backend.domain.mission.entity.Mission;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import com.petready.backend.domain.device.entity.Device;
+import org.springframework.data.jpa.repository.Modifying;
+import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 /**
@@ -11,6 +15,13 @@ import java.util.List;
  */
 @Repository
 public interface MissionRepository extends JpaRepository<Mission, Long> {
+    /**
+     * 특정 기기와 연관된 모든 미션 기록을 일괄 삭제합니다.
+     */
+    @Modifying
+    @Query("delete from Mission m where m.device = :device")
+    void deleteAllByDevice(@Param("device") Device device);
+
     
     /**
      * 특정 기기의 완료되지 않은 미션 목록을 조회합니다.

@@ -28,7 +28,7 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static org.hamcrest.Matchers.*;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -62,6 +62,9 @@ public class ReportApiIntegrationTest {
 
     @Autowired
     private RescueAnimalCacheRepository rescueAnimalCacheRepository;
+
+    @Autowired
+    private jakarta.persistence.EntityManager entityManager;
 
     private User testUser;
     private Device testDevice;
@@ -181,5 +184,38 @@ public class ReportApiIntegrationTest {
                 .andExpect(jsonPath("$.recommendedAnimals", hasSize(greaterThanOrEqualTo(1))))
                 .andExpect(jsonPath("$.recommendedAnimals[0].breed", is("골든리트리버")))
                 .andExpect(jsonPath("$.recommendedAnimals[0].animalId", is("DESERTION_001")));
+    }
+
+    @Test
+    @WithMockUser(username = "test@petready.com")
+    void testResetSimulationSuccess() throws Exception {
+        mockMvc.perform(post("/api/v1/report/reset")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        // 테스트 스레드의 1차 캐시를 비워 DB의 물리적 삭제 반영 상태를 확인
+        entityManager.clear();
+
+        org.junit.jupiter.api.Assertions.assertTrue(walkRepository.findAllByUserEmail("test@petready.com").isEmpty());
+        org.junit.jupiter.api.Assertions.assertTrue(missionRepository.findAllByDeviceUserEmail("test@petready.com").isEmpty());
+        
+        RealTimeScore score = realTimeScoreRepository.findById(testDevice.getDeviceId()).orElse(null);
+        org.junit.jupiter.api.Assertions.assertNotNull(score);
+        org.junit.jupiter.api.Assertions.assertEquals(100, score.getCurrentScore());
+    }
+
+    @Test
+    @WithMockUser(username = "test@petready.com")
+    void testWithdrawUserSuccess() throws Exception {
+        mockMvc.perform(delete("/api/v1/user/withdraw")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk());
+
+        // 테스트 스레드의 1차 캐시를 비워 DB의 물리적 삭제 반영 상태를 확인
+        entityManager.clear();
+
+        org.junit.jupiter.api.Assertions.assertFalse(userRepository.findByEmail("test@petready.com").isPresent());
+        org.junit.jupiter.api.Assertions.assertFalse(deviceRepository.findByUserEmail("test@petready.com").isPresent());
+        org.junit.jupiter.api.Assertions.assertFalse(realTimeScoreRepository.findById(testDevice.getDeviceId()).isPresent());
     }
 }
