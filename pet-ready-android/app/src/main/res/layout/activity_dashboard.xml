@@ -165,16 +165,6 @@
                     android:textSize="18sp"
                     android:textStyle="bold" />
 
-                <TextView
-                    android:id="@+id/tvPetLcdMessage"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="5dp"
-                    android:fontFamily="monospace"
-                    android:text="서버 상태를 불러오는 중입니다."
-                    android:textColor="@color/pet_text_muted"
-                    android:textSize="14sp" />
-
                 <LinearLayout
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
@@ -408,14 +398,6 @@
                         android:textStyle="bold" />
                 </LinearLayout>
 
-                <TextView
-                    android:id="@+id/tvHomeScoreEvent"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginTop="8dp"
-                    android:text="아직 점수 변동 없음"
-                    android:textColor="@color/pet_text_muted"
-                    android:textSize="14sp" />
             </LinearLayout>
 
             <Button

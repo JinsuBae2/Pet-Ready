@@ -18,6 +18,7 @@ import com.example.pet.R;
 import com.example.pet.model.MissionItem;
 import com.example.pet.notification.PetFirebaseMessagingService;
 import com.example.pet.repository.MissionRepository;
+import com.example.pet.repository.PetProfileRepository;
 
 public class MissionDetailActivity extends AppCompatActivity {
     private static final long MISSION_POLL_INTERVAL_MS = 3000L;
@@ -60,11 +61,12 @@ public class MissionDetailActivity extends AppCompatActivity {
 
         findViewById(R.id.btnMissionDetailBack).setOnClickListener(v -> finish());
 
-        tvMissionDetailTitle.setText(mission.title);
+        String petName = new PetProfileRepository(this).getPetName();
+        tvMissionDetailTitle.setText(PetProfileRepository.replaceRobotDog(mission.title, petName));
         renderMissionState();
-        tvMissionDetailDescription.setText(getDetailDescription());
-        tvMissionSteps.setText(getMissionSteps());
-        tvMissionNotes.setText(getMissionNotes());
+        tvMissionDetailDescription.setText(PetProfileRepository.replaceRobotDog(getDetailDescription(), petName));
+        tvMissionSteps.setText(PetProfileRepository.replaceRobotDog(getMissionSteps(), petName));
+        tvMissionNotes.setText(PetProfileRepository.replaceRobotDog(getMissionNotes(), petName));
         btnMissionStart.setOnClickListener(v -> handlePrimaryAction());
         if (isInProgress(mission)) {
             startPolling();
@@ -119,7 +121,26 @@ public class MissionDetailActivity extends AppCompatActivity {
             openWalkMission();
             return;
         }
+        if (isRobotPlayMission()) {
+            completeInteractionMission();
+            return;
+        }
         startMission();
+    }
+
+    private void completeInteractionMission() {
+        btnMissionStart.setEnabled(false);
+        btnMissionStart.setText("완료 요청 중...");
+        missionRepository.completeMission(mission, (completedMission, fromServer, message) -> {
+            Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+            if (!completedMission.completed) {
+                btnMissionStart.setEnabled(true);
+                btnMissionStart.setText("완료하기");
+                return;
+            }
+            mission = completedMission;
+            handleMissionCompleted("상호작용 미션에 성공했습니다.");
+        });
     }
 
     private void openWalkMission() {
@@ -182,12 +203,20 @@ public class MissionDetailActivity extends AppCompatActivity {
         }
         if (isInProgress(mission)) {
             tvMissionDetailStatus.setText("진행 중");
-            btnMissionStart.setText(isWalkMission() ? "산책 계속하기" : "진행 중...");
-            btnMissionStart.setEnabled(isWalkMission());
+            if (isWalkMission()) {
+                btnMissionStart.setText("산책 계속하기");
+                btnMissionStart.setEnabled(true);
+            } else if (isRobotPlayMission()) {
+                btnMissionStart.setText("완료하기");
+                btnMissionStart.setEnabled(true);
+            } else {
+                btnMissionStart.setText("진행 중...");
+                btnMissionStart.setEnabled(false);
+            }
             return;
         }
         tvMissionDetailStatus.setText("진행 전");
-        btnMissionStart.setText("미션 진행하기");
+        btnMissionStart.setText(isRobotPlayMission() ? "상호작용 완료" : "미션 진행하기");
         btnMissionStart.setEnabled(true);
     }
 
@@ -202,6 +231,10 @@ public class MissionDetailActivity extends AppCompatActivity {
 
     private boolean isWalkMission() {
         return mission != null && "WALK".equalsIgnoreCase(mission.missionType);
+    }
+
+    private boolean isRobotPlayMission() {
+        return mission != null && "ROBOT_PLAY".equalsIgnoreCase(mission.missionType);
     }
 
     private void handleMissionCompleted(String message) {
@@ -229,7 +262,7 @@ public class MissionDetailActivity extends AppCompatActivity {
 
     private String getMissionSteps() {
         if ("WALK".equalsIgnoreCase(mission.missionType)) {
-            return "1  산책 화면에서 산책 시작 누르기\n\n2  10분 이상 산책하기\n\n3  산책 종료 후 서버 완료 확인하기";
+            return "1  산책 화면에서 산책 시작 누르기\n\n2  1분 이상 산책하기\n\n3  산책 종료 후 서버 완료 확인하기";
         }
         if ("ROBOT_PLAY".equalsIgnoreCase(mission.missionType)) {
             return "1  로봇 강아지를 가까이 두기\n\n2  터치하거나 말을 걸어 상호작용하기\n\n3  반응을 확인한 뒤 완료 누르기";

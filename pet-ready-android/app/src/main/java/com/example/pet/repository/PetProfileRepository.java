@@ -88,4 +88,29 @@ public class PetProfileRepository {
     public interface SyncCallback {
         void onResult(boolean success, String message);
     }
+
+    public static String replaceRobotDog(String text, String petName) {
+        if (text == null || text.isEmpty() || petName == null || petName.isEmpty()) {
+            return text;
+        }
+
+        char lastChar = petName.charAt(petName.length() - 1);
+        boolean hasJongseong = false;
+        if (lastChar >= 0xAC00 && lastChar <= 0xD7A3) {
+            hasJongseong = (lastChar - 0xAC00) % 28 != 0;
+        }
+
+        String waGwa = hasJongseong ? "과" : "와";
+        String eulLeul = hasJongseong ? "을" : "를";
+        String iGa = hasJongseong ? "이" : "가";
+
+        return text.replace("로봇 강아지와", petName + waGwa)
+                   .replace("로봇강아지와", petName + waGwa)
+                   .replace("로봇 강아지를", petName + eulLeul)
+                   .replace("로봇강아지를", petName + eulLeul)
+                   .replace("로봇 강아지가", petName + iGa)
+                   .replace("로봇강아지가", petName + iGa)
+                   .replace("로봇 강아지", petName)
+                   .replace("로봇강아지", petName);
+    }
 }

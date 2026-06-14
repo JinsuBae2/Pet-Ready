@@ -20,6 +20,7 @@ import java.util.List;
 
 import retrofit2.Call;
 import retrofit2.http.Body;
+import retrofit2.http.DELETE;
 import retrofit2.http.GET;
 import retrofit2.http.Header;
 import retrofit2.http.PATCH;
@@ -98,6 +99,16 @@ public interface ApiService {
             @Header("Authorization") String authorization
     );
 
+    @POST("report/reset")
+    Call<Void> resetSimulation(
+            @Header("Authorization") String authorization
+    );
+
+    @DELETE("user/withdraw")
+    Call<Void> withdrawUser(
+            @Header("Authorization") String authorization
+    );
+
     @POST("training/reward")
     Call<TrainingRewardResponse> giveTrainingReward(
             @Body TrainingRewardRequest request
@@ -105,6 +116,7 @@ public interface ApiService {
 
     @GET("mission/today")
     Call<List<MissionItem>> getTodayMissions(
-            @Header("Authorization") String authorization
+            @Header("Authorization") String authorization,
+            @Query("deviceId") String deviceId
     );
 }

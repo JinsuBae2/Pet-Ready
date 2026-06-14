@@ -11,7 +11,10 @@ import com.example.pet.model.MissionItem;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import com.google.gson.Gson;
+import com.google.gson.reflect.TypeToken;
 
+import java.lang.reflect.Type;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
@@ -28,6 +31,8 @@ public class MissionRepository {
     public static final String KEY_WALK_MISSION_COMPLETED = "walk_mission_completed";
     private static final String KEY_MISSION_STATE_DATE = "mission_state_date";
     private static final String KEY_MISSION_COMPLETED_PREFIX = "mission_completed_";
+    private static final String KEY_URGENT_DISMISSED_PREFIX = "urgent_dismissed_";
+    private static final String KEY_PENDING_URGENT_MISSIONS = "pending_urgent_missions";
 
     public interface MissionListCallback {
         void onResult(List<MissionItem> missions, boolean fromServer, String message);
@@ -47,15 +52,20 @@ public class MissionRepository {
     private final ExpenseRepository expenseRepository;
     private final ScoreRepository scoreRepository;
     private final CareStatusRepository careStatusRepository;
+    private final DeviceRepository deviceRepository;
     private final SharedPreferences missionPreferences;
+    private final Gson gson = new Gson();
+    private final Context context;
 
     public MissionRepository(Context context) {
+        this.context = context.getApplicationContext();
         apiService = ApiClient.getClient().create(ApiService.class);
         authRepository = new AuthRepository(context);
         activityLogRepository = new ActivityLogRepository(context);
         expenseRepository = new ExpenseRepository(context);
         scoreRepository = new ScoreRepository(context);
         careStatusRepository = new CareStatusRepository(context);
+        deviceRepository = new DeviceRepository(context);
         missionPreferences = context.getApplicationContext()
                 .getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE);
         resetDailyMissionStateIfNeeded();
@@ -68,19 +78,27 @@ public class MissionRepository {
             return;
         }
 
-        apiService.getTodayMissions(authorization).enqueue(new Callback<List<MissionItem>>() {
+        String deviceId = deviceRepository.getDeviceId();
+        if (deviceId == null || deviceId.isEmpty()) {
+            callback.onResult(new ArrayList<>(), false, "등록된 기기 ID가 없습니다.");
+            return;
+        }
+
+        apiService.getTodayMissions(authorization, deviceId).enqueue(new Callback<List<MissionItem>>() {
             @Override
             public void onResponse(Call<List<MissionItem>> call, Response<List<MissionItem>> response) {
                 if (response.isSuccessful()) {
                     List<MissionItem> body = response.body();
                     callback.onResult(
-                            normalizeServerMissions(body == null ? new ArrayList<>() : body),
+                            mergePendingUrgentMissions(
+                                    normalizeServerMissions(body == null ? new ArrayList<>() : body)
+                            ),
                             true,
                             "서버의 오늘 미션을 불러왔습니다."
                     );
                 } else {
                     callback.onResult(
-                            new ArrayList<>(),
+                            mergePendingUrgentMissions(new ArrayList<>()),
                             false,
                             "미션 조회 API 실패: " + ApiErrorMessage.from(response)
                     );
@@ -90,7 +108,7 @@ public class MissionRepository {
             @Override
             public void onFailure(Call<List<MissionItem>> call, Throwable t) {
                 callback.onResult(
-                        new ArrayList<>(),
+                        mergePendingUrgentMissions(new ArrayList<>()),
                         false,
                         "미션 조회 API 연결 실패: " + t.getMessage()
                 );
@@ -169,23 +187,43 @@ public class MissionRepository {
                                     "미션 상태를 확인했습니다."
                             );
                         } else {
-                            callback.onResult(
-                                    copyMission(mission),
-                                    false,
-                                    "미션 상태 조회 실패: " + ApiErrorMessage.from(response)
-                            );
+                            findMissionInTodayList(mission, callback);
                         }
                     }
 
                     @Override
                     public void onFailure(Call<MissionItem> call, Throwable t) {
-                        callback.onResult(
-                                copyMission(mission),
-                                false,
-                                "미션 상태 연결 실패: " + t.getMessage()
-                        );
+                        findMissionInTodayList(mission, callback);
                     }
                 });
+    }
+
+    private void findMissionInTodayList(MissionItem target, MissionStateCallback callback) {
+        getTodayMissions((missions, fromServer, message) -> {
+            if (!fromServer) {
+                callback.onResult(copyMission(target), false, message);
+                return;
+            }
+
+            for (MissionItem candidate : missions) {
+                if (isSameMission(target, candidate)) {
+                    callback.onResult(candidate, true, "오늘의 미션 상태를 확인했습니다.");
+                    return;
+                }
+            }
+            callback.onResult(copyMission(target), true, "미션 완료 신호를 기다리는 중입니다.");
+        });
+    }
+
+    private boolean isSameMission(MissionItem first, MissionItem second) {
+        if (first == null || second == null) {
+            return false;
+        }
+        if (first.missionIdValue != null && second.missionIdValue != null
+                && first.missionIdValue.equals(second.missionIdValue)) {
+            return true;
+        }
+        return first.missionId == second.missionId;
     }
 
     private void requestMissionComplete(String authorization, MissionItem mission, MissionCompleteCallback callback, String successMessage) {
@@ -198,6 +236,7 @@ public class MissionRepository {
                     Log.d(TAG, "Mission complete sent to server.");
                     MissionItem completed = copyMission(mission);
                     completed.completed = true;
+                    removePendingUrgentMission(completed);
                     saveMissionCompleted(completed);
                     callback.onResult(normalizeServerMission(completed), true, successMessage);
                 } else {
@@ -225,9 +264,97 @@ public class MissionRepository {
     private List<MissionItem> normalizeServerMissions(List<MissionItem> source) {
         List<MissionItem> result = new ArrayList<>();
         for (MissionItem mission : source) {
-            result.add(normalizeServerMission(mission));
+            MissionItem normalized = normalizeServerMission(mission);
+            if (isUrgentMission(normalized)
+                    && (normalized.completed || isUrgentMissionDismissed(normalized))) {
+                continue;
+            }
+            result.add(normalized);
         }
         return result;
+    }
+
+    public void saveUrgentMissionFromPush(
+            long missionId,
+            String missionType,
+            String title,
+            String description
+    ) {
+        MissionItem mission = new MissionItem(missionId, title, false);
+        mission.missionType = normalizeMissionType(missionType);
+        mission.description = description;
+        mission.status = "PENDING";
+
+        List<MissionItem> pending = readPendingUrgentMissions();
+        for (int i = 0; i < pending.size(); i++) {
+            if (isSameMission(pending.get(i), mission)) {
+                pending.set(i, mission);
+                savePendingUrgentMissions(pending);
+                return;
+            }
+        }
+        pending.add(0, mission);
+        savePendingUrgentMissions(pending);
+    }
+
+    public void removeUrgentMissionFromPush(long missionId) {
+        List<MissionItem> pending = readPendingUrgentMissions();
+        pending.removeIf(mission -> mission.missionId == missionId);
+        savePendingUrgentMissions(pending);
+        markUrgentMissionDismissed(missionId);
+    }
+
+    private List<MissionItem> mergePendingUrgentMissions(List<MissionItem> serverMissions) {
+        List<MissionItem> merged = new ArrayList<>(serverMissions);
+        for (MissionItem pending : readPendingUrgentMissions()) {
+            boolean alreadyIncluded = false;
+            for (MissionItem serverMission : merged) {
+                if (isSameMission(pending, serverMission)) {
+                    alreadyIncluded = true;
+                    break;
+                }
+            }
+            if (!alreadyIncluded && !pending.completed) {
+                merged.add(0, normalizeServerMission(pending));
+            }
+        }
+        return merged;
+    }
+
+    private List<MissionItem> readPendingUrgentMissions() {
+        String json = missionPreferences.getString(KEY_PENDING_URGENT_MISSIONS, "");
+        if (json == null || json.isEmpty()) {
+            return new ArrayList<>();
+        }
+        Type type = new TypeToken<List<MissionItem>>() { }.getType();
+        List<MissionItem> missions = gson.fromJson(json, type);
+        return missions == null ? new ArrayList<>() : missions;
+    }
+
+    private void savePendingUrgentMissions(List<MissionItem> missions) {
+        missionPreferences.edit()
+                .putString(KEY_PENDING_URGENT_MISSIONS, gson.toJson(missions))
+                .apply();
+    }
+
+    private void removePendingUrgentMission(MissionItem completedMission) {
+        List<MissionItem> pending = readPendingUrgentMissions();
+        pending.removeIf(mission -> isSameMission(mission, completedMission));
+        savePendingUrgentMissions(pending);
+        markUrgentMissionDismissed(completedMission.missionId);
+    }
+
+    private void markUrgentMissionDismissed(long missionId) {
+        missionPreferences.edit()
+                .putBoolean(KEY_URGENT_DISMISSED_PREFIX + missionId, true)
+                .apply();
+    }
+
+    private boolean isUrgentMissionDismissed(MissionItem mission) {
+        return mission != null && missionPreferences.getBoolean(
+                KEY_URGENT_DISMISSED_PREFIX + mission.missionId,
+                false
+        );
     }
 
     private MissionItem normalizeServerMission(MissionItem mission) {
@@ -235,6 +362,13 @@ public class MissionRepository {
         copy.missionType = normalizeMissionType(copy.missionType);
         if ("COMPLETED".equalsIgnoreCase(copy.status)) {
             copy.completed = true;
+        } else if (!isUrgentMission(copy)
+                && missionPreferences.getBoolean(
+                KEY_MISSION_COMPLETED_PREFIX + copy.missionId,
+                false
+        )) {
+            copy.completed = true;
+            copy.status = "COMPLETED";
         } else if (copy.completed && (copy.status == null || copy.status.isEmpty())) {
             copy.status = "COMPLETED";
         } else if (copy.status == null || copy.status.isEmpty()) {
@@ -246,6 +380,11 @@ public class MissionRepository {
         if (copy.description == null || copy.description.isEmpty()) {
             copy.description = getDescriptionForMissionType(copy.missionType);
         }
+
+        String petName = new PetProfileRepository(context).getPetName();
+        copy.title = PetProfileRepository.replaceRobotDog(copy.title, petName);
+        copy.description = PetProfileRepository.replaceRobotDog(copy.description, petName);
+
         return copy;
     }
 
