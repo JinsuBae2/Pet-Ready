@@ -14,7 +14,7 @@ logging.getLogger("ultralytics").setLevel(logging.ERROR)
 # 1. 로컬 환경 설정 변수
 MODEL_PATH = 'yolov8n.pt'
 SERVER_URL = 'http://localhost:8080'  # 백엔드 서버 베이스 주소
-DEVICE_ID = 'https://q.me-qr.com/s7oh7juf'
+DEVICE_ID = 'DOG_01'
 CONFIDENCE_THRES = 0.35  # 접시 감도 조절을 위해 0.35로 완화
 REQUIRED_FRAMES_BOWL = 15  # 밥그릇 안착 판정 프레임 수
 REQUIRED_FRAMES_GESTURE = 15  # 제스쳐 판정 프레임 수
