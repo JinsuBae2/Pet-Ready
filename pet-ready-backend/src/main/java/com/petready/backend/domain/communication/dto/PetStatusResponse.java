@@ -38,5 +38,8 @@ public class PetStatusResponse {
 
     @Schema(description = "하드웨어 16x2 LCD 두 번째 행 아스키 텍스트", example = "DOG:  ( ≧ ▽ ≦ )")
     private String lcdTextLine2;
+
+    @Schema(description = "가상 배터리 잔량 (포만감 연동용)", example = "85")
+    private int batteryLevel;
 }
 

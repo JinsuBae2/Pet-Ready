@@ -332,6 +332,7 @@ public class PetCommunicationService {
                 .lcdCommand(lcdCommand)
                 .lcdTextLine1(lcdLine1)
                 .lcdTextLine2(lcdLine2)
+                .batteryLevel(virtualBattery)
                 .build();
     }
 

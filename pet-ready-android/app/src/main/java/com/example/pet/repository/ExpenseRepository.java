@@ -167,8 +167,10 @@ public class ExpenseRepository {
         return value.contains("vet")
                 || value.contains("hospital")
                 || value.contains("clinic")
+                || value.contains("medical")
                 || value.contains("병원")
-                || value.contains("진료");
+                || value.contains("진료")
+                || value.contains("아픔");
     }
 
     private boolean isVaccinationMission(String missionType, String title) {

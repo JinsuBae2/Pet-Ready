@@ -1,5 +1,7 @@
 package com.example.pet.api;
 
+import okhttp3.OkHttpClient;
+import java.util.concurrent.TimeUnit;
 import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 
@@ -24,8 +26,15 @@ public class ApiClient {
      */
     public static Retrofit getClient() {
         if (retrofit == null) {
+            OkHttpClient okHttpClient = new OkHttpClient.Builder()
+                    .connectTimeout(30, TimeUnit.SECONDS)
+                    .readTimeout(30, TimeUnit.SECONDS)
+                    .writeTimeout(30, TimeUnit.SECONDS)
+                    .build();
+
             retrofit = new Retrofit.Builder()
                     .baseUrl(BASE_URL) // 서버 기본 주소 설정
+                    .client(okHttpClient) // 타임아웃 30초 설정 추가
                     .addConverterFactory(GsonConverterFactory.create()) // JSON ↔ Java 객체 변환
                     .build();
         }

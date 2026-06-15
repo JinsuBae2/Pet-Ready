@@ -265,6 +265,10 @@ public class MissionRepository {
         List<MissionItem> result = new ArrayList<>();
         for (MissionItem mission : source) {
             MissionItem normalized = normalizeServerMission(mission);
+            if (normalized.completed) {
+                // 서버에서 완료 처리된 경우, 로컬 지출 내역(사료 소비, 진료비 기입 등)에 누락되었으면 자동 반영
+                expenseRepository.recordMissionExpenseIfNeeded(normalized.missionId, normalized.missionType, normalized.title);
+            }
             if (isUrgentMission(normalized)
                     && (normalized.completed || isUrgentMissionDismissed(normalized))) {
                 continue;
