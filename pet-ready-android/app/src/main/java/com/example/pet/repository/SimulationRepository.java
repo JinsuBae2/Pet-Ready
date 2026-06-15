@@ -8,6 +8,7 @@ public class SimulationRepository {
     private static final String KEY_SETUP_DONE = "setup_done";
     private static final String KEY_STARTED_AT = "started_at";
     private static final String KEY_DURATION_WEEKS = "duration_weeks";
+    private static final String KEY_FINAL_REPORT_DISMISSED = "final_report_dismissed";
     private static final int DEFAULT_DURATION_WEEKS = 3;
     private static final long DAY_MS = 24L * 60L * 60L * 1000L;
 
@@ -24,6 +25,7 @@ public class SimulationRepository {
                 .putBoolean(KEY_SETUP_DONE, true)
                 .putLong(KEY_STARTED_AT, System.currentTimeMillis())
                 .putInt(KEY_DURATION_WEEKS, boundedWeeks)
+                .putBoolean(KEY_FINAL_REPORT_DISMISSED, false)
                 .apply();
     }
 
@@ -49,12 +51,23 @@ public class SimulationRepository {
         return getCurrentDay() > getTotalDays();
     }
 
+    public boolean shouldShowFinalReport() {
+        return isFinished() && !preferences.getBoolean(KEY_FINAL_REPORT_DISMISSED, false);
+    }
+
+    public void dismissFinalReport() {
+        preferences.edit()
+                .putBoolean(KEY_FINAL_REPORT_DISMISSED, true)
+                .apply();
+    }
+
     public void forceFinishSimulation() {
         long completedStartedAt = System.currentTimeMillis()
                 - ((long) getTotalDays() + 1L) * DAY_MS;
         preferences.edit()
                 .putBoolean(KEY_SETUP_DONE, true)
                 .putLong(KEY_STARTED_AT, completedStartedAt)
+                .putBoolean(KEY_FINAL_REPORT_DISMISSED, false)
                 .apply();
     }
 

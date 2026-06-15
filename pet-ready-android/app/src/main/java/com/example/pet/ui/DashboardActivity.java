@@ -37,11 +37,9 @@ public class DashboardActivity extends AppCompatActivity {
     private android.widget.ProgressBar progressHunger;
     private android.widget.ProgressBar progressAffinity;
     private TextView tvHomeScore;
-    private TextView tvHomeScoreEvent;
     private TextView tvTodayMissionSummary;
     private TextView tvTodayMissionStatus;
     private TextView tvPetRoutineStatus;
-    private TextView tvPetLcdMessage;
     private Button btnReport;
     private ImageButton btnPetSettings;
     private Button btnActivityLog;
@@ -80,11 +78,9 @@ public class DashboardActivity extends AppCompatActivity {
         progressHunger = findViewById(R.id.progressHungry);
         progressAffinity = findViewById(R.id.progressAffinity);
         tvHomeScore = findViewById(R.id.tvHomeScore);
-        tvHomeScoreEvent = findViewById(R.id.tvHomeScoreEvent);
         tvTodayMissionSummary = findViewById(R.id.tvTodayMissionSummary);
         tvTodayMissionStatus = findViewById(R.id.tvTodayMissionStatus);
         tvPetRoutineStatus = findViewById(R.id.tvPetRoutineStatus);
-        tvPetLcdMessage = findViewById(R.id.tvPetLcdMessage);
         btnReport = findViewById(R.id.btnReport);
         btnPetSettings = findViewById(R.id.btnPetSettings);
         btnActivityLog = findViewById(R.id.btnActivityLog);
@@ -123,7 +119,7 @@ public class DashboardActivity extends AppCompatActivity {
             startActivity(new Intent(this, SimulationSetupActivity.class));
             return;
         }
-        if (simulationRepository.isFinished()) {
+        if (simulationRepository.shouldShowFinalReport()) {
             Intent intent = new Intent(this, FinalReportActivity.class);
             startActivity(intent);
             return;
@@ -163,10 +159,6 @@ public class DashboardActivity extends AppCompatActivity {
     private void showScoreSummary() {
         ReportSummary report = scoreRepository.getReportSummary();
         tvHomeScore.setText(report.getFinalScore() + "점");
-        String event = report.lastScoreEvent == null || report.lastScoreEvent.isEmpty()
-                ? "아직 점수 변동 없음"
-                : report.lastScoreEvent + " " + String.format("%+d", report.lastScoreDelta);
-        tvHomeScoreEvent.setText(event);
     }
 
     private void loadServerDashboard() {
@@ -191,7 +183,6 @@ public class DashboardActivity extends AppCompatActivity {
     private void renderPetStatus(PetStatusResponse status) {
         String mood = status.mood == null ? "HAPPY" : status.mood.toUpperCase(java.util.Locale.US);
         tvPetRoutineStatus.setText(getMoodLabel(mood));
-        tvPetLcdMessage.setText(joinStatusText(status));
         ivPetAvatar.setContentDescription("반려견 상태: " + mood);
 
         if ("SICK".equals(mood) || "HUNGRY".equals(mood)
@@ -203,15 +194,6 @@ public class DashboardActivity extends AppCompatActivity {
         } else {
             ivPetAvatar.setBackgroundResource(R.drawable.bg_pet_avatar_green);
         }
-    }
-
-    private String joinStatusText(PetStatusResponse status) {
-        String line1 = status.lcdTextLine1 == null ? "" : status.lcdTextLine1.trim();
-        String line2 = status.lcdTextLine2 == null ? "" : status.lcdTextLine2.trim();
-        if (!line1.isEmpty() || !line2.isEmpty()) {
-            return line1 + (line1.isEmpty() || line2.isEmpty() ? "" : "\n") + line2;
-        }
-        return status.analysisMessage == null ? "" : status.analysisMessage;
     }
 
     private String getMoodLabel(String mood) {
@@ -254,8 +236,8 @@ public class DashboardActivity extends AppCompatActivity {
                 .setMessage("데모용으로 체험 기간을 즉시 완료하고 최종 리포트로 이동할까요?")
                 .setNegativeButton("취소", null)
                 .setPositiveButton("종료", (dialog, which) -> {
-                    simulationRepository.forceFinishSimulation();
                     Intent intent = new Intent(this, FinalReportActivity.class);
+                    intent.putExtra(FinalReportActivity.EXTRA_DEMO_PREVIEW, true);
                     startActivity(intent);
                 })
                 .show();
@@ -280,12 +262,6 @@ public class DashboardActivity extends AppCompatActivity {
 
     private void renderServerDashboard(DashboardResponse dashboard) {
         tvHomeScore.setText(dashboard.currentScore + "점");
-        String event = dashboard.lastScoreEvent == null
-                || dashboard.lastScoreEvent.isEmpty()
-                || "NONE".equalsIgnoreCase(dashboard.lastScoreEvent)
-                ? "아직 점수 변동 없음"
-                : dashboard.lastScoreEvent + " " + String.format("%+d", dashboard.lastScoreDelta);
-        tvHomeScoreEvent.setText(event);
 
         if (dashboard.petName != null && !dashboard.petName.trim().isEmpty()) {
             tvPetName.setText(dashboard.petName);

@@ -6,6 +6,8 @@ import android.content.Intent;
 import android.util.Log;
 
 import com.example.pet.repository.FcmTokenRepository;
+import com.example.pet.repository.MissionRepository;
+import com.example.pet.repository.PetProfileRepository;
 import com.example.pet.ui.UrgentMissionActivity;
 import com.google.firebase.messaging.FirebaseMessagingService;
 import com.google.firebase.messaging.RemoteMessage;
@@ -30,22 +32,34 @@ public class PetFirebaseMessagingService extends FirebaseMessagingService {
 
         long missionId = parseMissionId(data.get("missionId"));
         String eventType = getFirst(data, "eventType", "notificationType", "type");
-        String missionType = getOrDefault(getFirst(data, "missionType", "type"), DEFAULT_URGENT_MISSION_TYPE);
+        String missionType = normalizeMissionType(
+                getOrDefault(getFirst(data, "missionType", "type"), DEFAULT_URGENT_MISSION_TYPE)
+        );
         String title = getOrDefault(getFirst(data, "title", "missionTitle", "notificationTitle"),
                 notification != null ? notification.getTitle() : "돌발 미션이 도착했어요");
         String message = getOrDefault(getFirst(data, "message", "missionMessage", "body", "content"),
                 notification != null ? notification.getBody() : "로봇 강아지의 상태를 확인하고 대응해 주세요.");
+
+        String petName = new PetProfileRepository(this).getPetName();
+        title = PetProfileRepository.replaceRobotDog(title, petName);
+        message = PetProfileRepository.replaceRobotDog(message, petName);
 
         if ("MISSION_COMPLETED".equalsIgnoreCase(eventType)) {
             notifyMissionCompleted(missionId, title, message);
             return;
         }
 
+        new MissionRepository(this).saveUrgentMissionFromPush(
+                missionId,
+                missionType,
+                title,
+                message
+        );
+        NotificationHelper.createNotificationChannel(this);
+        NotificationHelper.showUrgentMissionAlert(this, missionId, missionType, title, message);
+
         if (isAppInForeground()) {
             openUrgentMissionActivity(missionId, missionType, title, message);
-        } else {
-            NotificationHelper.createNotificationChannel(this);
-            NotificationHelper.showUrgentMissionAlert(this, missionId, missionType, title, message);
         }
     }
 
@@ -54,6 +68,7 @@ public class PetFirebaseMessagingService extends FirebaseMessagingService {
         String completionMessage = message == null || message.isEmpty()
                 ? "미션에 성공했습니다."
                 : message;
+        new MissionRepository(this).removeUrgentMissionFromPush(missionId);
 
         Intent completedIntent = new Intent(ACTION_MISSION_COMPLETED);
         completedIntent.setPackage(getPackageName());
@@ -103,6 +118,16 @@ public class PetFirebaseMessagingService extends FirebaseMessagingService {
             }
         }
         return "";
+    }
+
+    private String normalizeMissionType(String missionType) {
+        if ("BARKING".equalsIgnoreCase(missionType)) {
+            return "BARKING_ALERT";
+        }
+        if ("FEEDING".equalsIgnoreCase(missionType)) {
+            return "FEEDING_TIME";
+        }
+        return missionType;
     }
 
     private void openUrgentMissionActivity(long missionId, String missionType, String title, String message) {

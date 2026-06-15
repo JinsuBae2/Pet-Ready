@@ -12,14 +12,17 @@ import android.widget.Toast;
 
 import androidx.activity.result.ActivityResultLauncher;
 import androidx.activity.result.contract.ActivityResultContracts;
+import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.content.ContextCompat;
 
 import com.example.pet.MainActivity;
 import com.example.pet.R;
 import com.example.pet.notification.NotificationHelper;
+import com.example.pet.repository.AccountDataManager;
 import com.example.pet.repository.AuthRepository;
 import com.example.pet.repository.PetProfileRepository;
+import com.example.pet.repository.ResetRepository;
 
 public class MoreActivity extends AppCompatActivity {
     private AuthRepository authRepository;
@@ -42,6 +45,7 @@ public class MoreActivity extends AppCompatActivity {
         ImageView ivMorePetAvatar = findViewById(R.id.ivMorePetAvatar);
         TextView tvMorePetName = findViewById(R.id.tvMorePetName);
         TextView btnMoreLogout = findViewById(R.id.btnMoreLogout);
+        TextView btnMoreWithdraw = findViewById(R.id.btnMoreWithdraw);
 
         authRepository = new AuthRepository(this);
         profileRepository = new PetProfileRepository(this);
@@ -57,6 +61,7 @@ public class MoreActivity extends AppCompatActivity {
         findViewById(R.id.rowAppInfo).setOnClickListener(v -> Toast.makeText(this, "Pet Ready v1.0.0", Toast.LENGTH_SHORT).show());
         findViewById(R.id.rowTraining).setOnClickListener(v -> startActivity(new Intent(this, TrainingActivity.class)));
         btnMoreLogout.setOnClickListener(v -> logout());
+        btnMoreWithdraw.setOnClickListener(v -> confirmWithdrawal(btnMoreWithdraw));
 
         findViewById(R.id.btnMoreBack).setOnClickListener(v -> finish());
         findViewById(R.id.btnNavHome).setOnClickListener(v -> startActivity(new Intent(this, DashboardActivity.class)));
@@ -105,6 +110,34 @@ public class MoreActivity extends AppCompatActivity {
         Intent intent = new Intent(this, MainActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
         startActivity(intent);
+    }
+
+    private void confirmWithdrawal(TextView button) {
+        new AlertDialog.Builder(this)
+                .setTitle("회원 탈퇴")
+                .setMessage("계정, 기기 연결, 산책, 미션, 훈련 및 리포트 데이터가 모두 삭제됩니다. 계속할까요?")
+                .setNegativeButton("취소", null)
+                .setPositiveButton("탈퇴", (dialog, which) -> withdrawUser(button))
+                .show();
+    }
+
+    private void withdrawUser(TextView button) {
+        button.setEnabled(false);
+        button.setText("탈퇴 처리 중...");
+        new ResetRepository(this).withdrawUser((success, message) -> {
+            Toast.makeText(this, message, success ? Toast.LENGTH_SHORT : Toast.LENGTH_LONG).show();
+            if (!success) {
+                button.setEnabled(true);
+                button.setText("회원 탈퇴");
+                return;
+            }
+
+            AccountDataManager.resetForNewAccount(this);
+            authRepository.clearTokens();
+            Intent intent = new Intent(this, MainActivity.class);
+            intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+            startActivity(intent);
+        });
     }
 
 }

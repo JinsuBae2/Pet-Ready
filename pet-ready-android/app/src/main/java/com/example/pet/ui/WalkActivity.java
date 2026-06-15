@@ -4,6 +4,10 @@ import android.content.SharedPreferences;
 import android.content.Intent;
 import android.Manifest;
 import android.content.pm.PackageManager;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Paint;
 import android.location.Location;
 import android.os.Bundle;
 import android.os.Handler;
@@ -35,8 +39,12 @@ import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.OnMapReadyCallback;
 import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.BitmapDescriptor;
+import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.Marker;
 import com.google.android.gms.maps.model.MarkerOptions;
+import com.google.android.gms.maps.model.Polyline;
 import com.google.android.gms.maps.model.PolylineOptions;
 
 import java.util.ArrayList;
@@ -44,7 +52,7 @@ import java.util.List;
 import java.util.Locale;
 
 public class WalkActivity extends AppCompatActivity implements OnMapReadyCallback {
-    private static final long MIN_WALK_MISSION_SECONDS = 10 * 60;
+    private static final long MIN_WALK_MISSION_SECONDS = 60;
 
     private TextView tvWalkInfo;
     private TextView tvWalkDistance;
@@ -53,6 +61,8 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
     private Button btnEndWalk;
 
     private GoogleMap googleMap;
+    private Marker currentLocationMarker;
+    private Polyline routePolyline;
     private FusedLocationProviderClient fusedLocationClient;
     private LocationCallback locationCallback;
     private final Handler timerHandler = new Handler(Looper.getMainLooper());
@@ -138,6 +148,15 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
     @Override
     public void onMapReady(GoogleMap map) {
         googleMap = map;
+        googleMap.getUiSettings().setZoomControlsEnabled(true);
+        googleMap.getUiSettings().setZoomGesturesEnabled(true);
+        googleMap.getUiSettings().setScrollGesturesEnabled(true);
+        googleMap.getUiSettings().setRotateGesturesEnabled(true);
+        googleMap.setOnMapLoadedCallback(() -> {
+            if (!walking) {
+                tvWalkInfo.setText("지도가 준비됐습니다. 산책 시작을 눌러 기록하세요.");
+            }
+        });
 
         LatLng seoul = new LatLng(37.5665, 126.9780);
         googleMap.addMarker(new MarkerOptions()
@@ -146,7 +165,39 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
         googleMap.moveCamera(CameraUpdateFactory.newLatLngZoom(seoul, 15f));
 
         tvWalkInfo.setText("산책 시작을 누르면 위치 기록이 시작됩니다.");
+        showCurrentLocationPreview();
         updateWalkInfo();
+    }
+
+    private void showCurrentLocationPreview() {
+        if (googleMap == null
+                || ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
+                != PackageManager.PERMISSION_GRANTED) {
+            return;
+        }
+
+        googleMap.setMyLocationEnabled(true);
+        fusedLocationClient.getLastLocation().addOnSuccessListener(location -> {
+            if (location == null) {
+                fusedLocationClient.getCurrentLocation(
+                        Priority.PRIORITY_HIGH_ACCURACY,
+                        null
+                ).addOnSuccessListener(this::centerMapOnLocation);
+                return;
+            }
+            centerMapOnLocation(location);
+        });
+    }
+
+    private void centerMapOnLocation(Location location) {
+        if (location == null || googleMap == null || walking) {
+            return;
+        }
+
+        LatLng current = new LatLng(location.getLatitude(), location.getLongitude());
+        updateCurrentLocationMarker(current);
+        googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(current, 17f));
+        tvWalkInfo.setText("현재 위치를 확인했습니다. 산책 시작을 눌러 기록하세요.");
     }
 
     private void checkPermissionAndStartWalk() {
@@ -175,6 +226,10 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         if (googleMap != null) {
             googleMap.clear();
+            currentLocationMarker = null;
+            routePolyline = googleMap.addPolyline(new PolylineOptions()
+                    .color(getColor(R.color.pet_primary))
+                    .width(12f));
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.ACCESS_FINE_LOCATION)
                     == PackageManager.PERMISSION_GRANTED) {
                 googleMap.setMyLocationEnabled(true);
@@ -221,11 +276,13 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
         routePoints.add(latLng);
 
         if (googleMap != null) {
-            googleMap.clear();
-            googleMap.addMarker(new MarkerOptions()
-                    .position(latLng)
-                    .title("현재 위치"));
-            googleMap.addPolyline(new PolylineOptions().addAll(routePoints));
+            updateCurrentLocationMarker(latLng);
+            if (routePolyline == null) {
+                routePolyline = googleMap.addPolyline(new PolylineOptions()
+                        .color(getColor(R.color.pet_primary))
+                        .width(12f));
+            }
+            routePolyline.setPoints(routePoints);
             googleMap.animateCamera(CameraUpdateFactory.newLatLngZoom(latLng, 17f));
         }
 
@@ -288,7 +345,7 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
 
             Intent intent = new Intent(this, MissionCompleteActivity.class);
             MissionIntentExtras.putMission(intent, completedMission);
-            intent.putExtra("complete_message", "10분 산책 미션에 성공했습니다.");
+            intent.putExtra("complete_message", "1분 산책 미션에 성공했습니다.");
             startActivity(intent);
             finish();
         });
@@ -296,11 +353,11 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void updateWalkInfo() {
         if (walking) {
-            tvWalkInfo.setText("산책 중이에요. 10분 이상 진행하면 산책 미션이 완료됩니다.");
+            tvWalkInfo.setText("산책 중이에요. 1분 이상 진행하면 산책 미션이 완료됩니다.");
         } else if (lastWalkDurationSeconds >= MIN_WALK_MISSION_SECONDS) {
-            tvWalkInfo.setText("10분 산책을 완료했어요.");
+            tvWalkInfo.setText("1분 산책을 완료했어요.");
         } else if (lastWalkDurationSeconds > 0L) {
-            tvWalkInfo.setText("산책 기록은 저장됐지만 10분 미만이라 미션은 아직 완료되지 않았어요.");
+            tvWalkInfo.setText("산책 기록은 저장됐지만 1분 미만이라 미션은 아직 완료되지 않았어요.");
         } else {
             tvWalkInfo.setText("산책 대기 중이에요.");
         }
@@ -323,6 +380,42 @@ public class WalkActivity extends AppCompatActivity implements OnMapReadyCallbac
             return String.format(Locale.KOREA, "%.1f km", meters / 1000f);
         }
         return String.format(Locale.KOREA, "%.0f m", meters);
+    }
+
+    private void updateCurrentLocationMarker(LatLng position) {
+        if (googleMap == null) {
+            return;
+        }
+        if (currentLocationMarker == null) {
+            currentLocationMarker = googleMap.addMarker(new MarkerOptions()
+                    .position(position)
+                    .title("내 위치")
+                    .anchor(0.5f, 0.5f)
+                    .icon(createLocationMarkerIcon()));
+            return;
+        }
+        currentLocationMarker.setPosition(position);
+    }
+
+    private BitmapDescriptor createLocationMarkerIcon() {
+        float density = getResources().getDisplayMetrics().density;
+        int size = Math.max(72, Math.round(48f * density));
+        Bitmap bitmap = Bitmap.createBitmap(size, size, Bitmap.Config.ARGB_8888);
+        Canvas canvas = new Canvas(bitmap);
+
+        Paint circlePaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        circlePaint.setColor(getColor(R.color.pet_primary));
+        canvas.drawCircle(size / 2f, size / 2f, size * 0.45f, circlePaint);
+
+        Paint textPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
+        textPaint.setColor(Color.WHITE);
+        textPaint.setTextAlign(Paint.Align.CENTER);
+        textPaint.setFakeBoldText(true);
+        textPaint.setTextSize(size * 0.5f);
+        Paint.FontMetrics metrics = textPaint.getFontMetrics();
+        float textY = size / 2f - (metrics.ascent + metrics.descent) / 2f;
+        canvas.drawText("M", size / 2f, textY, textPaint);
+        return BitmapDescriptorFactory.fromBitmap(bitmap);
     }
 
     @Override

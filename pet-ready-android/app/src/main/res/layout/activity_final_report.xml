@@ -1,166 +1,264 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@drawable/bg_app">
 
-    <LinearLayout
+    <!-- ScrollView for Content (Original report screen) -->
+    <ScrollView
+        android:id="@+id/scrollFinalReportContent"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="vertical"
-        android:padding="20dp">
+        android:layout_height="match_parent"
+        android:visibility="gone">
 
-        <TextView
-            android:id="@+id/tvFinalReportTitle"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:text="최종 리포트"
+            android:orientation="vertical"
+            android:padding="20dp">
+
+            <TextView
+                android:id="@+id/tvFinalReportTitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="최종 리포트"
+                android:textColor="@color/pet_text"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tvFinalReportSubtitle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="6dp"
+                android:lineSpacingExtra="3dp"
+                android:text="돌봄 기간 동안의 산책, 미션 대응, 양육비 기록을 바탕으로 정리한 결과예요."
+                android:textColor="@color/pet_text_muted"
+                android:textSize="15sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_report_paper"
+                android:elevation="5dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="종합 성적"
+                    android:textColor="@color/pet_primary_dark"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvFinalReportScore"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="84점 · A"
+                    android:textColor="@color/pet_text"
+                    android:textSize="34sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvFinalReportStats"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="실적 지표"
+                    android:textColor="@color/pet_text_muted"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_card"
+                android:elevation="5dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="AI 성향 분석"
+                    android:textColor="@color/pet_primary_dark"
+                    android:textSize="14sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvFinalUserType"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="준비된 활동가형"
+                    android:textColor="@color/pet_text"
+                    android:textSize="23sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvFinalBreedRecommendation"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:lineSpacingExtra="4dp"
+                    android:text="품종 추천"
+                    android:textColor="@color/pet_text_muted"
+                    android:textSize="15sp" />
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tvFinalContextMessage"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:background="@drawable/bg_report_paper"
+                android:elevation="5dp"
+                android:lineSpacingExtra="4dp"
+                android:text="공공데이터 메시지"
+                android:textColor="@color/pet_text"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="vertical">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="추천 유기견"
+                    android:textColor="@color/pet_text"
+                    android:textSize="20sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:id="@+id/tvFinalAnimalsEmpty"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="추천 가능한 유기견 정보가 없습니다."
+                    android:textColor="@color/pet_text_muted"
+                    android:textSize="15sp"
+                    android:visibility="gone" />
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/rvFinalAnimals"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:nestedScrollingEnabled="false" />
+            </LinearLayout>
+
+            <Button
+                android:id="@+id/btnFinalReportClose"
+                android:layout_width="match_parent"
+                android:layout_height="58dp"
+                android:layout_marginTop="16dp"
+                android:background="@drawable/bg_secondary_pill"
+                android:backgroundTint="@null"
+                app:backgroundTint="@null"
+                android:text="처음부터 다시 시작"
+                android:textAllCaps="false"
+                android:textColor="@color/pet_primary_dark"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+    </ScrollView>
+
+    <!-- AI Loading Overlay Screen -->
+    <LinearLayout
+        android:id="@+id/layoutFinalReportLoading"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="visible"
+        android:clickable="true"
+        android:focusable="true">
+
+        <FrameLayout
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_gravity="center">
+
+            <!-- Glowing Halo Background -->
+            <ImageView
+                android:id="@+id/ivLoadingGlow"
+                android:layout_width="260dp"
+                android:layout_height="260dp"
+                android:layout_gravity="center"
+                android:src="@drawable/bg_aurora_glow" />
+
+            <!-- Rotating Ring Loader -->
+            <ProgressBar
+                android:id="@+id/progressLoadingCircle"
+                style="?android:attr/progressBarStyleLarge"
+                android:layout_width="150dp"
+                android:layout_height="150dp"
+                android:layout_gravity="center"
+                android:indeterminate="true"
+                android:indeterminateTint="@color/pet_primary" />
+
+            <!-- Cute Robot Pet Icon in Center -->
+            <ImageView
+                android:id="@+id/ivLoadingIcon"
+                android:layout_width="96dp"
+                android:layout_height="96dp"
+                android:layout_gravity="center"
+                android:src="@drawable/ic_robot_pet" />
+        </FrameLayout>
+
+        <!-- AI Text Heading -->
+        <TextView
+            android:id="@+id/tvLoadingTitle"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="32dp"
+            android:text="AI 리포트 분석 중"
             android:textColor="@color/pet_text"
-            android:textSize="30sp"
+            android:textSize="24sp"
             android:textStyle="bold" />
 
+        <!-- Status description cycling dynamically -->
         <TextView
-            android:id="@+id/tvFinalReportSubtitle"
-            android:layout_width="match_parent"
+            android:id="@+id/tvLoadingStatus"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="6dp"
-            android:lineSpacingExtra="3dp"
-            android:text="돌봄 기간 동안의 산책, 미션 대응, 양육비 기록을 바탕으로 정리한 결과예요."
+            android:layout_marginTop="8dp"
+            android:gravity="center"
+            android:text="반려견 양육 데이터를 수집하는 중..."
             android:textColor="@color/pet_text_muted"
             android:textSize="15sp" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/bg_report_paper"
-            android:elevation="5dp"
-            android:orientation="vertical">
+        <!-- Linear Progress Bar -->
+        <ProgressBar
+            android:id="@+id/progressLoadingBar"
+            style="?android:attr/progressBarStyleHorizontal"
+            android:layout_width="200dp"
+            android:layout_height="8dp"
+            android:layout_marginTop="24dp"
+            android:max="100"
+            android:progress="0"
+            android:progressTint="@color/pet_primary"
+            android:progressBackgroundTint="@color/pet_border" />
 
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="종합 성적"
-                android:textColor="@color/pet_primary_dark"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvFinalReportScore"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="84점 · A"
-                android:textColor="@color/pet_text"
-                android:textSize="34sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvFinalReportStats"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:lineSpacingExtra="4dp"
-                android:text="실적 지표"
-                android:textColor="@color/pet_text_muted"
-                android:textSize="15sp" />
-        </LinearLayout>
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/bg_card"
-            android:elevation="5dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="AI 성향 분석"
-                android:textColor="@color/pet_primary_dark"
-                android:textSize="14sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvFinalUserType"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="6dp"
-                android:text="준비된 활동가형"
-                android:textColor="@color/pet_text"
-                android:textSize="23sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvFinalBreedRecommendation"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:lineSpacingExtra="4dp"
-                android:text="품종 추천"
-                android:textColor="@color/pet_text_muted"
-                android:textSize="15sp" />
-        </LinearLayout>
-
+        <!-- Percent Indicator -->
         <TextView
-            android:id="@+id/tvFinalContextMessage"
-            android:layout_width="match_parent"
+            android:id="@+id/tvLoadingPercent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:background="@drawable/bg_report_paper"
-            android:elevation="5dp"
-            android:lineSpacingExtra="4dp"
-            android:text="공공데이터 메시지"
-            android:textColor="@color/pet_text"
-            android:textSize="16sp"
-            android:textStyle="bold" />
-
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="14dp"
-            android:orientation="vertical">
-
-            <TextView
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:text="추천 유기견"
-                android:textColor="@color/pet_text"
-                android:textSize="20sp"
-                android:textStyle="bold" />
-
-            <TextView
-                android:id="@+id/tvFinalAnimalsEmpty"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:text="추천 가능한 유기견 정보가 없습니다."
-                android:textColor="@color/pet_text_muted"
-                android:textSize="15sp"
-                android:visibility="gone" />
-
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/rvFinalAnimals"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:layout_marginTop="12dp"
-                android:nestedScrollingEnabled="false" />
-        </LinearLayout>
-
-        <Button
-            android:id="@+id/btnFinalReportClose"
-            android:layout_width="match_parent"
-            android:layout_height="58dp"
-            android:layout_marginTop="16dp"
-            android:background="@drawable/bg_secondary_pill"
-            android:backgroundTint="@null"
-            app:backgroundTint="@null"
-            android:text="닫기"
-            android:textAllCaps="false"
-            android:textColor="@color/pet_primary_dark"
-            android:textSize="16sp"
+            android:layout_marginTop="6dp"
+            android:text="0%"
+            android:textColor="@color/pet_primary"
+            android:textSize="13sp"
             android:textStyle="bold" />
     </LinearLayout>
-</ScrollView>
+</FrameLayout>

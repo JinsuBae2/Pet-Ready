@@ -161,6 +161,18 @@
                 android:textColor="#DC2626"
                 android:textSize="16sp"
                 android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/btnMoreWithdraw"
+                android:layout_width="match_parent"
+                android:layout_height="62dp"
+                android:clickable="true"
+                android:focusable="true"
+                android:gravity="center_vertical"
+                android:text="회원 탈퇴"
+                android:textColor="#991B1B"
+                android:textSize="15sp"
+                android:textStyle="bold" />
         </LinearLayout>
     </ScrollView>
 

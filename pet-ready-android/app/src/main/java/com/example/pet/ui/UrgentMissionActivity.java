@@ -10,6 +10,7 @@ import androidx.appcompat.app.AppCompatActivity;
 import com.example.pet.R;
 import com.example.pet.model.MissionItem;
 import com.example.pet.repository.MissionRepository;
+import com.example.pet.repository.PetProfileRepository;
 
 public class UrgentMissionActivity extends AppCompatActivity {
     public static final String EXTRA_MISSION_ID = "mission_id";
@@ -44,11 +45,12 @@ public class UrgentMissionActivity extends AppCompatActivity {
         missionRepository = new MissionRepository(this);
         mission = buildMissionFromIntent();
 
-        tvUrgentMissionTitle.setText(mission.title);
-        tvUrgentMissionMessage.setText(mission.description);
+        String petName = new PetProfileRepository(this).getPetName();
+        tvUrgentMissionTitle.setText(PetProfileRepository.replaceRobotDog(mission.title, petName));
+        tvUrgentMissionMessage.setText(PetProfileRepository.replaceRobotDog(mission.description, petName));
         tvUrgentMissionStatus.setText("긴급");
-        tvUrgentMissionSteps.setText(getMissionSteps());
-        tvUrgentMissionNotes.setText(getMissionNotes());
+        tvUrgentMissionSteps.setText(PetProfileRepository.replaceRobotDog(getMissionSteps(), petName));
+        tvUrgentMissionNotes.setText(PetProfileRepository.replaceRobotDog(getMissionNotes(), petName));
 
         btnUrgentRespond.setOnClickListener(v -> respondToMission());
         btnUrgentClose.setOnClickListener(v -> finish());
@@ -86,6 +88,8 @@ public class UrgentMissionActivity extends AppCompatActivity {
             if (mission.completed) {
                 btnUrgentRespond.setText("대응 완료");
                 tvUrgentMissionStatus.setText("완료");
+                setResult(RESULT_OK);
+                finish();
             } else if (fromServer && "FEEDING_TIME".equalsIgnoreCase(mission.missionType)) {
                 btnUrgentRespond.setText("밥그릇 인식 대기 중");
                 tvUrgentMissionStatus.setText("확인 대기");
