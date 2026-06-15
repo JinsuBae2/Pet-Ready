@@ -7,6 +7,7 @@ import com.petready.backend.domain.device.repository.DeviceRepository;
 import com.petready.backend.domain.mission.entity.Mission;
 import com.petready.backend.domain.mission.repository.MissionRepository;
 import com.petready.backend.domain.report.dto.FinalReportResponse;
+import com.petready.backend.domain.report.dto.ExpenseReportResponse;
 import com.petready.backend.domain.report.entity.PetReport;
 import com.petready.backend.domain.report.repository.PetReportRepository;
 import com.petready.backend.domain.report.service.ReportService;
@@ -263,6 +264,24 @@ public class ReportController {
                             .build();
                 })
                 .collect(Collectors.toList());
+    }
+
+    /**
+     * 사용자의 누적 영수증 지출 내역을 조회합니다.
+     */
+    @Operation(
+        summary = "누적 영수증 지출 내역 조회 API",
+        description = "사용자의 전체 시뮬레이션 지출 내역(총 지출 금액 및 세부 영수증 리스트)을 반환합니다."
+    )
+    @ApiResponses(value = {
+        @ApiResponse(responseCode = "200", description = "지출 내역 조회 성공"),
+        @ApiResponse(responseCode = "401", description = "인증 토큰 누락 또는 유효 만료 상태")
+    })
+    @GetMapping("/expenses")
+    public ResponseEntity<ExpenseReportResponse> getExpenses(@AuthenticationPrincipal UserDetails userDetails) {
+        String email = userDetails.getUsername();
+        log.info("[지출 내역 조회 API 호출] 이메일: {}", email);
+        return ResponseEntity.ok(reportService.getExpenses(email));
     }
 
     /**

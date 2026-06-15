@@ -12,6 +12,13 @@ import org.springframework.transaction.annotation.Transactional;
 import com.petready.backend.domain.user.repository.UserRepository;
 import java.math.BigDecimal;
 
+import com.petready.backend.domain.report.dto.ExpenseReportResponse;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Optional;
+import java.util.List;
+import java.util.ArrayList;
+import java.util.Arrays;
+
 /**
  * 최종 리포트에 연관된 비즈니스 로직 및 AI 피드백 문구 영속화 관리를 수행하는 서비스입니다.
  */
@@ -23,6 +30,7 @@ public class ReportService {
     private final PetReportRepository reportRepository;
     private final UserRepository userRepository;
     private final GeminiService geminiService;
+    private final ObjectMapper objectMapper;
 
     /**
      * 최종 리포트 내의 AI 피드백 문구를 조회합니다.
@@ -83,6 +91,43 @@ public class ReportService {
         log.info("[ReportService] 생성된 AI 피드백을 PetReport에 캐싱 영속화 완료했습니다.");
 
         return generatedFeedback;
+    }
+
+    /**
+     * 사용자의 시뮬레이션 지출 내역 및 가상 영수증 상세 내역을 조회합니다.
+     */
+    @Transactional(readOnly = true)
+    public ExpenseReportResponse getExpenses(String email) {
+        Optional<PetReport> reportOpt = reportRepository.findByUserEmail(email);
+        if (reportOpt.isEmpty()) {
+            return ExpenseReportResponse.builder()
+                    .totalAmount(0L)
+                    .items(new ArrayList<>())
+                    .build();
+        }
+
+        PetReport report = reportOpt.get();
+        List<ExpenseReportResponse.ExpenseItem> items = new ArrayList<>();
+        String json = report.getReceiptDetailsJson();
+
+        if (json != null && !json.trim().isEmpty()) {
+            try {
+                ExpenseReportResponse.ExpenseItem[] parsed = objectMapper.readValue(
+                        json,
+                        ExpenseReportResponse.ExpenseItem[].class
+                );
+                if (parsed != null) {
+                    items.addAll(Arrays.asList(parsed));
+                }
+            } catch (Exception e) {
+                log.warn("[ReportService] 영수증 JSON 파싱 실패 (예외 방어): {}", e.getMessage());
+            }
+        }
+
+        return ExpenseReportResponse.builder()
+                .totalAmount(report.getTotalReceiptAmount() != null ? report.getTotalReceiptAmount() : 0L)
+                .items(items)
+                .build();
     }
 
 }

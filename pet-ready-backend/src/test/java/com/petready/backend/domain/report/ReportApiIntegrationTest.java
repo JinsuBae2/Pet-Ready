@@ -8,6 +8,9 @@ import com.petready.backend.domain.rescue.entity.RescueAnimalCache;
 import com.petready.backend.domain.rescue.repository.RescueAnimalCacheRepository;
 import com.petready.backend.domain.score.entity.RealTimeScore;
 import com.petready.backend.domain.score.repository.RealTimeScoreRepository;
+import com.petready.backend.domain.report.dto.FinalReportResponse;
+import com.petready.backend.domain.report.entity.PetReport;
+import com.petready.backend.domain.report.repository.PetReportRepository;
 import com.petready.backend.domain.user.entity.User;
 import com.petready.backend.domain.user.repository.UserRepository;
 import com.petready.backend.domain.walk.entity.Walk;
@@ -62,6 +65,9 @@ public class ReportApiIntegrationTest {
 
     @Autowired
     private RescueAnimalCacheRepository rescueAnimalCacheRepository;
+
+    @Autowired
+    private PetReportRepository petReportRepository;
 
     @Autowired
     private jakarta.persistence.EntityManager entityManager;
@@ -217,5 +223,71 @@ public class ReportApiIntegrationTest {
         org.junit.jupiter.api.Assertions.assertFalse(userRepository.findByEmail("test@petready.com").isPresent());
         org.junit.jupiter.api.Assertions.assertFalse(deviceRepository.findByUserEmail("test@petready.com").isPresent());
         org.junit.jupiter.api.Assertions.assertFalse(realTimeScoreRepository.findById(testDevice.getDeviceId()).isPresent());
+    }
+
+    @Test
+    @WithMockUser(username = "test@petready.com")
+    void testGetExpensesSuccess() throws Exception {
+        // Given
+        PetReport report = PetReport.builder()
+                .user(testUser)
+                .totalScore(BigDecimal.valueOf(100))
+                .grade("A+")
+                .totalReceiptAmount(145000L)
+                .receiptDetailsJson("[{\"item\":\"초진 진찰료\",\"amount\":10840,\"reason\":\"돌발 아픔 미션 진료비\"}]")
+                .totalWalkCount(1)
+                .totalMissionCount(1)
+                .build();
+        petReportRepository.save(report);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/report/expenses")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount", is(145000)))
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].item", is("초진 진찰료")))
+                .andExpect(jsonPath("$.items[0].amount", is(10840)))
+                .andExpect(jsonPath("$.items[0].reason", is("돌발 아픔 미션 진료비")));
+    }
+
+    @Test
+    @WithMockUser(username = "test@petready.com")
+    void testGetExpensesNoReport() throws Exception {
+        // Given
+        petReportRepository.deleteByUser(testUser);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/report/expenses")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount", is(0)))
+                .andExpect(jsonPath("$.items", hasSize(0)));
+    }
+
+    @Test
+    @WithMockUser(username = "test@petready.com")
+    void testGetExpensesInvalidJson() throws Exception {
+        // Given
+        PetReport report = PetReport.builder()
+                .user(testUser)
+                .totalScore(BigDecimal.valueOf(100))
+                .grade("A+")
+                .totalReceiptAmount(1000L)
+                .receiptDetailsJson("{invalid-json-structure}")
+                .totalWalkCount(1)
+                .totalMissionCount(1)
+                .build();
+        petReportRepository.save(report);
+
+        // When & Then
+        mockMvc.perform(get("/api/v1/report/expenses")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalAmount", is(1000)))
+                .andExpect(jsonPath("$.items", hasSize(0)));
     }
 }
