@@ -10,6 +10,7 @@ import com.example.pet.model.PetStatusRequest;
 import com.example.pet.model.PetStatusResponse;
 import com.example.pet.model.RegisterRequest;
 import com.example.pet.model.DeviceRegisterRequest;
+import com.example.pet.model.ExpenseReportResponse;
 import com.example.pet.model.ReportAnalysis;
 import com.example.pet.model.TrainingRewardRequest;
 import com.example.pet.model.TrainingRewardResponse;
@@ -96,6 +97,11 @@ public interface ApiService {
 
     @GET("report/final")
     Call<ReportAnalysis> getFinalReport(
+            @Header("Authorization") String authorization
+    );
+
+    @GET("report/expenses")
+    Call<ExpenseReportResponse> getExpenses(
             @Header("Authorization") String authorization
     );
 

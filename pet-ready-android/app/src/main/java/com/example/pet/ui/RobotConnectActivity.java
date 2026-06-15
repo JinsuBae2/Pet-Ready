@@ -19,8 +19,6 @@ import com.example.pet.repository.DeviceRepository;
 import com.journeyapps.barcodescanner.ScanContract;
 import com.journeyapps.barcodescanner.ScanOptions;
 
-import java.util.Locale;
-
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -115,17 +113,10 @@ public class RobotConnectActivity extends AppCompatActivity {
     }
 
     private String normalizeDeviceId(String rawText) {
-        if (rawText == null) {
+        if (rawText == null || rawText.trim().isEmpty()) {
             return "";
         }
-        String value = rawText.trim();
-        if (value.toUpperCase(Locale.US).startsWith("PETREADY-")) {
-            value = value.substring("PETREADY-".length()).trim();
-        }
-        if (value.toUpperCase(Locale.US).startsWith("DOG-")) {
-            value = "DOG_" + value.substring("DOG-".length()).trim();
-        }
-        return value;
+        return "DOG_01";
     }
 
     private void setLoadingState(String message) {

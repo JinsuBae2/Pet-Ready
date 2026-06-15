@@ -185,6 +185,9 @@ public class DashboardActivity extends AppCompatActivity {
         tvPetRoutineStatus.setText(getMoodLabel(mood));
         ivPetAvatar.setContentDescription("반려견 상태: " + mood);
 
+        careStatusRepository.updateHunger(status.batteryLevel);
+        showPetStatus();
+
         if ("SICK".equals(mood) || "HUNGRY".equals(mood)
                 || "BARKING".equals(mood) || "CONFUSED".equals(mood)
                 || "SAD".equals(mood)) {

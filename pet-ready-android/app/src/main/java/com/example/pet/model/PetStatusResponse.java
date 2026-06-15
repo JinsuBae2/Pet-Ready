@@ -10,6 +10,8 @@ public class PetStatusResponse {
     @SerializedName(value = "hungry", alternate = {"isHungry"})
     public boolean hungry;
 
+    public int batteryLevel;
+
     public String mood;
     public String healthStatus;
     public String analysisMessage;

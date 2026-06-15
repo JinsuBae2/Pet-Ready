@@ -38,8 +38,12 @@ public class CareStatusRepository {
     }
 
     public void refillHungerForFeeding() {
+        updateHunger(100);
+    }
+
+    public void updateHunger(int hungerLevel) {
         preferences.edit()
-                .putInt(KEY_HUNGER, 100)
+                .putInt(KEY_HUNGER, clamp(hungerLevel))
                 .apply();
     }
 

@@ -236,7 +236,9 @@ public class MissionRepository {
                     Log.d(TAG, "Mission complete sent to server.");
                     MissionItem completed = copyMission(mission);
                     completed.completed = true;
-                    removePendingUrgentMission(completed);
+                    if (isTransientUrgentMission(completed)) {
+                        removePendingUrgentMission(completed);
+                    }
                     saveMissionCompleted(completed);
                     callback.onResult(normalizeServerMission(completed), true, successMessage);
                 } else {
@@ -265,7 +267,7 @@ public class MissionRepository {
         List<MissionItem> result = new ArrayList<>();
         for (MissionItem mission : source) {
             MissionItem normalized = normalizeServerMission(mission);
-            if (isUrgentMission(normalized)
+            if (isTransientUrgentMission(normalized)
                     && (normalized.completed || isUrgentMissionDismissed(normalized))) {
                 continue;
             }
@@ -314,7 +316,9 @@ public class MissionRepository {
                     break;
                 }
             }
-            if (!alreadyIncluded && !pending.completed) {
+            if (!alreadyIncluded
+                    && !pending.completed
+                    && !isUrgentMissionDismissed(pending)) {
                 merged.add(0, normalizeServerMission(pending));
             }
         }
@@ -355,6 +359,24 @@ public class MissionRepository {
                 KEY_URGENT_DISMISSED_PREFIX + mission.missionId,
                 false
         );
+    }
+
+    private boolean isTransientUrgentMission(MissionItem mission) {
+        if (isUrgentMission(mission)) {
+            return true;
+        }
+        return mission != null
+                && "FEEDING_TIME".equalsIgnoreCase(mission.missionType)
+                && (isPendingUrgentMission(mission) || isUrgentMissionDismissed(mission));
+    }
+
+    private boolean isPendingUrgentMission(MissionItem target) {
+        for (MissionItem pending : readPendingUrgentMissions()) {
+            if (isSameMission(pending, target)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private MissionItem normalizeServerMission(MissionItem mission) {
@@ -571,7 +593,7 @@ public class MissionRepository {
         }
 
         return "BARKING_ALERT".equalsIgnoreCase(mission.missionType)
-                || "FEEDING_TIME".equalsIgnoreCase(mission.missionType)
+                || "MEDICAL".equalsIgnoreCase(mission.missionType)
                 || "EMERGENCY".equalsIgnoreCase(mission.missionType)
                 || "SURPRISE".equalsIgnoreCase(mission.missionType);
     }

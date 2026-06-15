@@ -86,16 +86,7 @@ public class ExpenseRepository {
             return;
         }
 
-        if (isVetMission(missionType, title)) {
-            addExpense("동물병원 진료", "병원", VET_CHECK_COST);
-            preferences.edit().putBoolean(key, true).apply();
-            return;
-        }
-
-        if (isVaccinationMission(missionType, title)) {
-            addExpense("예방접종", "예방접종", VACCINATION_COST);
-            preferences.edit().putBoolean(key, true).apply();
-        }
+        preferences.edit().putBoolean(key, true).apply();
     }
 
     public List<ExpenseItem> getExpenses() {
