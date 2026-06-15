@@ -186,7 +186,7 @@ def main():
     poll_interval = 4.0 # STANDBY 상태 시 4초마다 폴링
     last_check_cancel_time = 0
     
-    HEADLESS_MODE = True  # 실시간 모니터 창 활성화 (카메라 화면 표출)
+    HEADLESS_MODE = False  # 실시간 모니터 창 활성화 (카메라 화면 표출)
     if not HEADLESS_MODE:
         cv2.namedWindow('Pet-Ready Integrated Local Vision AI Simulation', cv2.WINDOW_NORMAL)
 
