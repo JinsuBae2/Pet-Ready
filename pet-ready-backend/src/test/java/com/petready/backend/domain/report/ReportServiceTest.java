@@ -149,4 +149,32 @@ public class ReportServiceTest {
         // save()는 1) newReport 저장 시, 2) aiFeedback 캐싱 저장 시 총 2번 호출되어야 함
         verify(reportRepository, times(2)).save(any(PetReport.class));
     }
+
+    @Test
+    @DisplayName("최초 조회 시 Gemini API가 실패하여 null을 리턴하면: fallback 피드백을 반환하고 DB에는 캐싱하지 않는다")
+    void testGetOrGenerateAiFeedback_ApiFailureNoCache() {
+        // given
+        String email = "test@petready.com";
+        String expectedFallback = "기본 Fallback 피드백 텍스트입니다.";
+        
+        when(reportRepository.findByUserEmail(email)).thenReturn(Optional.of(testReport));
+        when(geminiService.generateFeedback(
+                eq("테스터"), eq("준비된 활동가형"), eq(90), eq(0.95), eq(8), eq(10), eq(1), eq("푸들, 말티즈"), eq(5L), eq(80.0), eq(1L)
+        )).thenReturn(null);
+        when(geminiService.generateFallbackFeedback(
+                eq("준비된 활동가형"), eq(90), eq(0.95), eq(1), eq(80.0)
+        )).thenReturn(expectedFallback);
+
+        // when
+        String result = reportService.getOrGenerateAiFeedback(
+                email, analysisResult, 90, 0.95, 8, 10, 1, 5L, 80.0, 1L
+        );
+
+        // then
+        assertThat(result).isEqualTo(expectedFallback);
+        assertThat(testReport.getAiFeedback()).isNull(); // 캐싱되지 않았어야 함
+        
+        // save()는 리포트 조회/저장에 사용되지 않았어야 함 (캐시가 업데이트 되지 않으므로)
+        verify(reportRepository, never()).save(any(PetReport.class));
+    }
 }

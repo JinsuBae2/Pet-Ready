@@ -42,8 +42,8 @@ public class GeminiService {
      */
     public String generateFeedback(String userName, String userTypeLabel, int finalScore, double walkRatio, int completedMissions, int totalMissions, int sickCount, String breedExamples, long totalTraining, double trainingSuccessRate, long confusedCount) {
         if (apiKey == null || apiKey.trim().isEmpty()) {
-            log.warn("[Gemini API] API Key가 설정되지 않았습니다. 기본 Fallback 피드백을 제공합니다.");
-            return generateFallbackFeedback(userTypeLabel, finalScore, walkRatio, sickCount, trainingSuccessRate);
+            log.warn("[Gemini API] API Key가 설정되지 않았습니다.");
+            return null;
         }
 
         try {
@@ -87,7 +87,7 @@ public class GeminiService {
             log.error("[Gemini API] 호출 중 에러가 발생했습니다. Error: {}", e.getMessage(), e);
         }
 
-        return generateFallbackFeedback(userTypeLabel, finalScore, walkRatio, sickCount, trainingSuccessRate);
+        return null;
     }
 
     /**
@@ -138,7 +138,7 @@ public class GeminiService {
     /**
      * API 장애 또는 키 미설정 시 반환할 유형별 기본 Fallback 피드백 텍스트입니다.
      */
-    private String generateFallbackFeedback(String userTypeLabel, int finalScore, double walkRatio, int sickCount, double trainingSuccessRate) {
+    public String generateFallbackFeedback(String userTypeLabel, int finalScore, double walkRatio, int sickCount, double trainingSuccessRate) {
         StringBuilder sb = new StringBuilder();
         String title = trainingSuccessRate >= 80.0 ? "[칭호: 댕댕이 소통의 신]" : "[칭호: 노력하는 동반자]";
         sb.append(title).append("\n\n");

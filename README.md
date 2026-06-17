@@ -211,12 +211,86 @@ gantt
   }
   ```
 
+### ④ 최종 리포트 및 유기견 매칭 조회 (앱 ➡️ 서버)
+* **Endpoint**: `GET /api/v1/report/final`
+* **Authorization**: `Bearer <Access_Token>`
+* **Response**:
+  ```json
+  {
+    "finalScore": 85,
+    "grade": "A",
+    "walkScore": 90,
+    "responseScore": 80,
+    "healthPenalty": 15,
+    "totalWalkKm": 4.9,
+    "avgResponseSec": 320,
+    "totalMedicalFee": 150000,
+    "userType": "READY_ACTIVE",
+    "userTypeLabel": "활발하고 듬직한 예비 보호자",
+    "breedRecommendation": {
+      "type": "골든 리트리버, 보더 콜리",
+      "examples": "골든 리트리버, 보더 콜리, 시베리안 허스키",
+      "reason": "산책 목표를 훌륭히 완수하고 포만감을 자주 챙기는 에너제틱한 사용자 성향에 적합한 견종입니다."
+    },
+    "contextMessage": "Gemini AI가 생성한 초개인화 맞춤형 피드백 총평...",
+    "recommendedAnimals": [
+      {
+        "animalId": "411562202400123",
+        "breed": "골든 리트리버",
+        "age": "2023(년생)",
+        "shelterName": "서울 동물보호센터",
+        "region": "서울특별시",
+        "imageUrl": "http://...",
+        "isFallback": false,
+        "matchReason": "사용자님의 성향 분석 매칭에 따라 적합한 추천 품종 구조견입니다."
+      }
+    ]
+  }
+  ```
+
+### ⑤ 누적 영수증 지출 내역 조회 (앱 ➡️ 서버)
+* **Endpoint**: `GET /api/v1/report/expenses`
+* **Authorization**: `Bearer <Access_Token>`
+* **Response**:
+  ```json
+  {
+    "totalAmount": 150000,
+    "expenses": [
+      {
+        "itemName": "가상 예방 접종비",
+        "amount": 50000,
+        "category": "MEDICAL",
+        "timestamp": "2026-06-15T10:15:30"
+      },
+      {
+        "itemName": "가상 사료 및 식기 구매",
+        "amount": 100000,
+        "category": "FOOD",
+        "timestamp": "2026-06-15T11:00:00"
+      }
+    ]
+  }
+  ```
+
+### ⑥ 시뮬레이션 데이터 초기화 (앱 ➡️ 서버)
+* **Endpoint**: `POST /api/v1/report/reset`
+* **Authorization**: `Bearer <Access_Token>`
+* **Response**: `200 OK` (모든 산책, 미션, 훈련 기록 및 실시간 점수가 초기화되고 아픔 횟수가 0으로 재설정됨)
+
 ---
 
 ## 🚀 7. 기동 및 설정 가이드 (Getting Started)
 
 ### 1) 백엔드 서버 (Spring Boot)
 젯슨나노 또는 클라우드 호스팅 환경에서 Gradle 데몬 오버헤드로 인한 메모리 부족(OOM)을 막기 위해, 빌드를 로컬에서 완료 후 Jar 파일을 독립 가동하는 방식을 채택하고 있습니다.
+
+* **환경 변수 (.env) 설정**:
+  서버 구동 전에 `pet-ready-backend/.env` 파일을 작성해야 합니다.
+  ```env
+  PUBLIC_DATA_API_KEY=공공데이터포털_유기견_API_키
+  GEMINI_API_KEY=구글_Gemini_API_키
+  ```
+  `run_server.sh` 스크립트는 이 `.env` 파일을 자동으로 읽어 환경 변수로 `export` 한 후 서버를 구동합니다.
 
 ```bash
 cd ~/Pet-Ready/pet-ready-backend

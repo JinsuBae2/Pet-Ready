@@ -84,13 +84,22 @@ public class ReportService {
                 confusedCount
         );
 
-        // 4. Dirty Checking 및 명시적 저장(테스트 Mocking 검증 호환)을 통해 변경 사항을 DB에 영속화
-        report.updateAiFeedback(generatedFeedback);
-        reportRepository.save(report);
-        
-        log.info("[ReportService] 생성된 AI 피드백을 PetReport에 캐싱 영속화 완료했습니다.");
-
-        return generatedFeedback;
+        if (generatedFeedback != null) {
+            // 4. Dirty Checking 및 명시적 저장(테스트 Mocking 검증 호환)을 통해 변경 사항을 DB에 영속화
+            report.updateAiFeedback(generatedFeedback);
+            reportRepository.save(report);
+            log.info("[ReportService] 생성된 AI 피드백을 PetReport에 캐싱 영속화 완료했습니다. Email: {}", email);
+            return generatedFeedback;
+        } else {
+            log.warn("[ReportService] Gemini API 호출 실패로 캐싱하지 않고 실시간 Fallback 피드백을 반환합니다. Email: {}", email);
+            return geminiService.generateFallbackFeedback(
+                    analysisResult.getUserTypeLabel(),
+                    finalScore,
+                    walkRatio,
+                    sickCount,
+                    trainingSuccessRate
+            );
+        }
     }
 
     /**
