@@ -17,6 +17,7 @@ public class ApiClient {
 
     // Retrofit 객체를 한 번만 생성해서 재사용하기 위한 변수
     private static Retrofit retrofit;
+    cd "C:\Users\YNC\Desktop\Pet-Ready"
 
     /*
      * Retrofit 객체를 반환하는 함수

@@ -8,6 +8,7 @@ import com.example.pet.api.ApiClient;
 import com.example.pet.api.ApiErrorMessage;
 import com.example.pet.api.ApiService;
 import com.example.pet.model.MissionItem;
+import com.example.pet.model.PetFeedRequest;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -164,6 +165,46 @@ public class MissionRepository {
                         );
                     }
                 });
+    }
+
+    public void startFeedingMission(MissionItem mission, MissionStateCallback callback) {
+        startMission(mission, (startedMission, success, message) -> {
+            if (!success) {
+                callback.onResult(startedMission, false, message);
+                return;
+            }
+
+            apiService.feedPet(
+                    getAuthorizationHeader(),
+                    new PetFeedRequest(deviceRepository.getDeviceId())
+            ).enqueue(new Callback<Void>() {
+                @Override
+                public void onResponse(Call<Void> call, Response<Void> response) {
+                    if (response.isSuccessful()) {
+                        callback.onResult(
+                                startedMission,
+                                true,
+                                "밥 주기 신호를 보냈습니다. 카메라 인식을 기다립니다."
+                        );
+                    } else {
+                        callback.onResult(
+                                startedMission,
+                                false,
+                                "밥 주기 신호 전송 실패: " + ApiErrorMessage.from(response)
+                        );
+                    }
+                }
+
+                @Override
+                public void onFailure(Call<Void> call, Throwable t) {
+                    callback.onResult(
+                            startedMission,
+                            false,
+                            "밥 주기 신호 연결 실패: " + t.getMessage()
+                    );
+                }
+            });
+        });
     }
 
     public void getMissionState(MissionItem mission, MissionStateCallback callback) {

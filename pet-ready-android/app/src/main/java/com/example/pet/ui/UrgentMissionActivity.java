@@ -1,5 +1,6 @@
 package com.example.pet.ui;
 
+import android.content.Intent;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.TextView;
@@ -82,6 +83,26 @@ public class UrgentMissionActivity extends AppCompatActivity {
         btnUrgentRespond.setEnabled(false);
         tvUrgentMissionStatus.setText("전송 중");
 
+        if ("FEEDING_TIME".equalsIgnoreCase(mission.missionType)) {
+            missionRepository.startFeedingMission(mission, (startedMission, success, message) -> {
+                mission = startedMission;
+                Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
+                if (!success) {
+                    btnUrgentRespond.setEnabled(true);
+                    btnUrgentRespond.setText("밥 주기 다시 시도");
+                    tvUrgentMissionStatus.setText("전송 실패");
+                    return;
+                }
+
+                mission.status = "IN_PROGRESS";
+                Intent intent = new Intent(this, MissionProgressActivity.class);
+                MissionIntentExtras.putMission(intent, mission);
+                startActivity(intent);
+                finish();
+            });
+            return;
+        }
+
         missionRepository.completeMission(mission, (completedMission, fromServer, message) -> {
             mission = completedMission;
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
@@ -90,9 +111,6 @@ public class UrgentMissionActivity extends AppCompatActivity {
                 tvUrgentMissionStatus.setText("완료");
                 setResult(RESULT_OK);
                 finish();
-            } else if (fromServer && "FEEDING_TIME".equalsIgnoreCase(mission.missionType)) {
-                btnUrgentRespond.setText("밥그릇 인식 대기 중");
-                tvUrgentMissionStatus.setText("확인 대기");
             } else {
                 btnUrgentRespond.setEnabled(true);
                 tvUrgentMissionStatus.setText("전송 실패");

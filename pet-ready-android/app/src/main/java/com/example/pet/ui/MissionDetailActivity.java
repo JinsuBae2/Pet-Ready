@@ -97,11 +97,12 @@ public class MissionDetailActivity extends AppCompatActivity {
     private void startMission() {
         btnMissionStart.setEnabled(false);
         btnMissionStart.setText("시작 요청 중...");
-        missionRepository.startMission(mission, (startedMission, success, message) -> {
+        MissionRepository.MissionStateCallback callback = (startedMission, success, message) -> {
             Toast.makeText(this, message, Toast.LENGTH_SHORT).show();
             if (!success) {
+                mission = startedMission;
                 btnMissionStart.setEnabled(true);
-                btnMissionStart.setText("미션 진행하기");
+                btnMissionStart.setText(isFeedingMission() ? "밥 주기 다시 시도" : "미션 진행하기");
                 return;
             }
 
@@ -113,7 +114,13 @@ public class MissionDetailActivity extends AppCompatActivity {
                 return;
             }
             startPolling();
-        });
+        };
+
+        if (isFeedingMission()) {
+            missionRepository.startFeedingMission(mission, callback);
+        } else {
+            missionRepository.startMission(mission, callback);
+        }
     }
 
     private void handlePrimaryAction() {
@@ -121,7 +128,7 @@ public class MissionDetailActivity extends AppCompatActivity {
             openWalkMission();
             return;
         }
-        if (isRobotPlayMission()) {
+        if (isRobotPlayMission() || isImmediateUrgentMission()) {
             completeInteractionMission();
             return;
         }
@@ -209,6 +216,12 @@ public class MissionDetailActivity extends AppCompatActivity {
             } else if (isRobotPlayMission()) {
                 btnMissionStart.setText("완료하기");
                 btnMissionStart.setEnabled(true);
+            } else if (isImmediateUrgentMission()) {
+                btnMissionStart.setText("미션 해결");
+                btnMissionStart.setEnabled(true);
+            } else if (isFeedingMission()) {
+                btnMissionStart.setText("밥그릇 인식 대기 중");
+                btnMissionStart.setEnabled(false);
             } else {
                 btnMissionStart.setText("진행 중...");
                 btnMissionStart.setEnabled(false);
@@ -216,7 +229,11 @@ public class MissionDetailActivity extends AppCompatActivity {
             return;
         }
         tvMissionDetailStatus.setText("진행 전");
-        btnMissionStart.setText(isRobotPlayMission() ? "상호작용 완료" : "미션 진행하기");
+        btnMissionStart.setText(
+                isRobotPlayMission()
+                        ? "상호작용 완료"
+                        : isImmediateUrgentMission() ? "미션 해결" : "미션 진행하기"
+        );
         btnMissionStart.setEnabled(true);
     }
 
@@ -235,6 +252,14 @@ public class MissionDetailActivity extends AppCompatActivity {
 
     private boolean isRobotPlayMission() {
         return mission != null && "ROBOT_PLAY".equalsIgnoreCase(mission.missionType);
+    }
+
+    private boolean isFeedingMission() {
+        return mission != null && "FEEDING_TIME".equalsIgnoreCase(mission.missionType);
+    }
+
+    private boolean isImmediateUrgentMission() {
+        return MissionRepository.isUrgentMission(mission);
     }
 
     private void handleMissionCompleted(String message) {
@@ -271,7 +296,7 @@ public class MissionDetailActivity extends AppCompatActivity {
             return "1  로봇 전원 상태 확인하기\n\n2  연결 상태 확인하기\n\n3  이상이 없으면 완료 요청하기";
         }
         if ("FEEDING_TIME".equalsIgnoreCase(mission.missionType)) {
-            return "1  사료 상태 확인하기\n\n2  밥그릇을 채워주기\n\n3  완료 버튼을 눌러 기록하기";
+            return "1  사료 상태 확인하기\n\n2  밥그릇을 채워주기\n\n3  카메라가 밥그릇을 인식할 때까지 기다리기";
         }
         if ("MEDICAL".equalsIgnoreCase(mission.missionType)) {
             return "1  로봇 강아지의 상태 확인하기\n\n2  필요한 진료를 진행하기\n\n3  완료 버튼을 눌러 진료비 반영하기";
