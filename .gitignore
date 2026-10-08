@@ -33,3 +33,6 @@ yolov8n.pt
 *.pdf
 demo_report.html
 scratch_api_test.sh
+
+# Firebase Android config (example file is committed instead)
+pet-ready-android/app/google-services.json
