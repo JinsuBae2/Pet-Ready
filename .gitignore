@@ -36,3 +36,6 @@ scratch_api_test.sh
 
 # Firebase Android config (example file is committed instead)
 pet-ready-android/app/google-services.json
+
+# Arduino Wi-Fi credentials (copy secrets_example.h)
+secrets.h
