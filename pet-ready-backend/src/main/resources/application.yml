@@ -16,7 +16,7 @@ spring:
     # 기본은 로컬 환경을 바라보도록 설정
     url: ${MARIADB_URL:jdbc:mariadb://localhost:3306/pet_ready?serverTimezone=Asia/Seoul}
     username: ${MARIADB_USER:root}
-    password: ${MARIADB_PASSWORD:2019}
+    password: ${MARIADB_PASSWORD}
 
   # JPA 설정
   jpa:

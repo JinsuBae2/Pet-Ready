@@ -34,7 +34,7 @@ API 형식은 문서로 정했지만 막상 붙여 보면 서로 안 맞는 코�
 
 기억에 남는 건 로봇강아지 ID 문제다.
 로봇강아지는 한 대뿐인데 아두이노 코드는 `DOG_04`를, 비전과 백엔드는 `DOG_01`을 쓰고 있어서 연동이 되지 않았다.
-결국 `DOG_01`로 맞췄다. 처음 버전은 `DOG_04_System/`에, 맞춘 버전은 루트의 `DOG_01_Project.ino`에 남아 있다.
+결국 `DOG_01`로 맞췄다. 처음 버전은 `arduino/DOG_04_System/`에, 맞춘 버전은 `arduino/DOG_01_Project/`에 남아 있다.
 
 백엔드와 비전 코드는 AI 개발 도구를 쓰면서 작성했다.
 첫 프로젝트라 AI를 제대로 활용하지 못했고, 프롬프트도 구체적이지 않았다.
@@ -44,24 +44,29 @@ API 형식은 문서로 정했지만 막상 붙여 보면 서로 안 맞는 코�
 ## 폴더 구조
 
 ```text
-pet-ready-backend/                 Spring Boot 백엔드 (Java 17, MariaDB)
-pet-ready-android/                 Android 앱 (Java)
-DOG_01_Project.ino                 로봇강아지 최종 코드 (DOG_01)
-DOG_04_System/                     로봇강아지 이전 버전 (DOG_04)
-vision_bowl_local_detector_event.py  Jetson Nano 비전 스크립트
-legacy_prototypes/                 비전 스크립트 이전 버전
-안드로이드_로직_설명서.md            Android 앱 화면 흐름과 로직 설명
+pet-ready-backend/      Spring Boot 백엔드 (Java 17, MariaDB)
+pet-ready-android/      Android 앱 (Java)
+arduino/
+  DOG_01_Project/       로봇강아지 최종 코드 (DOG_01)
+  DOG_04_System/        로봇강아지 이전 버전 (DOG_04)
+vision/
+  vision_bowl_local_detector_event.py   Jetson Nano 비전 스크립트
+  legacy/               비전 스크립트 이전 버전
+docs/
+  안드로이드_로직_설명서.md   Android 앱 화면 흐름과 로직 설명
 ```
 
-루트에 파일이 흩어져 있는데, Jetson과 로봇강아지에서 실제로 돌리던 경로라 옮기지 않고 그대로 뒀다.
+처음에는 아두이노 코드와 비전 스크립트가 루트에 흩어져 있었는데, 프로젝트가 끝난 뒤 파트별 폴더로 정리했다.
 
 ## 실행 방법
 
 ### 백엔드
 
-`pet-ready-backend/.env`에 API 키를 넣는다.
+`pet-ready-backend/.env`에 DB 계정과 API 키를 넣는다.
 
 ```env
+MARIADB_USER=DB_사용자
+MARIADB_PASSWORD=DB_비밀번호
 PUBLIC_DATA_API_KEY=공공데이터포털_유기동물_API_키
 GEMINI_API_KEY=Gemini_API_키
 ```
@@ -78,14 +83,17 @@ API 문서는 서버 실행 후 `/swagger-ui.html`에서 볼 수 있다.
 
 ### Jetson Nano 비전
 
+YOLO 모델 파일(`yolov8n.pt`)은 저장소에 없으니 `vision/` 폴더에 넣는다. 스크립트는 실행한 위치에서 모델을 찾는다.
+
 ```bash
 sudo chmod 666 /dev/video0
+cd vision
 sudo ~/pet_venv/bin/python3 vision_bowl_local_detector_event.py
 ```
 
 ### 로봇강아지 (ESP32)
 
-`secrets_example.h`를 복사해서 `secrets.h`를 만들고, Wi-Fi 정보와 백엔드 주소(`BASE_URL`)를 넣은 뒤 Arduino IDE로 업로드한다.
+Arduino IDE로 `arduino/DOG_01_Project/DOG_01_Project.ino`를 연다. 같은 폴더의 `secrets_example.h`를 복사해서 `secrets.h`를 만들고, Wi-Fi 정보와 백엔드 주소(`BASE_URL`)를 넣은 뒤 업로드한다.
 
 ### Android
 
